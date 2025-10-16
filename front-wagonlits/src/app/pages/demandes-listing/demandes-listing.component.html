@@ -8,9 +8,7 @@
       {{ isTriggering ? 'Envoi...' : 'Trigger event (webhook)' }}
     </button>
   </div>
-
-   <h3>Liste des demandes de Wagon Lits</h3>
-
+  
   <a routerLink="/demandes/add" class="btn btn-primary mb-3">Ajouter une demande</a>
 
   <div *ngIf="triggerResult" class="alert alert-secondary my-3" style="white-space: pre-wrap;">
