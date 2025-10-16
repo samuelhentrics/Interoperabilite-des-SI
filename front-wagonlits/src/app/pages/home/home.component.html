@@ -1,1 +1,94 @@
-<p>ANALIA !</p>
+<div class="container-fluid p-4">
+
+  <header class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2">Tableau de Bord - ERP WAGL</h1>
+      <p class="text-muted">Bonjour {{ userName }}, bienvenue sur votre portail de gestion de la maintenance.</p>
+    </div>
+    <div>
+      <span class="fw-bold">{{ currentDate | date: 'fullDate':'':'fr' }}</span>
+    </div>
+  </header>
+
+  <section class="row mb-4">
+    <div class="col-md-3">
+      <div class="card text-white bg-warning h-100">
+        <div class="card-body">
+          <h5 class="card-title">Devis en Attente</h5>
+          <p class="display-4">3</p>
+          <p class="card-text">Devis de DevMateriels à valider par vos soins.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-info h-100">
+        <div class="card-body">
+          <h5 class="card-title">Réparations en Cours</h5>
+          <p class="display-4">7</p>
+          <p class="card-text">Wagons actuellement en maintenance chez DevMateriels.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <h5 class="card-title">Interventions Terminées</h5>
+                <p class="display-4">15</p>
+                <p class="card-text">Opérations finalisées ce mois-ci.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-danger h-100">
+        <div class="card-body">
+          <h5 class="card-title">Retards de Livraison</h5>
+          <p class="display-4">1</p>
+          <p class="card-text">Intervention dépassant la date de réparation convenue.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h4 mb-3">Vos Actions de Maintenance Curative</h2>
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Déclarer une Nouvelle Panne</h5>
+            <p class="card-text">Initiez une nouvelle demande de maintenance curative.</p>
+            <button (click)="navigateTo('new-request')" class="btn btn-primary mt-auto">Créer une Demande d'Intervention</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Suivre mes Demandes en Cours</h5>
+            <p class="card-text">Consultez l'état d'avancement de toutes vos demandes : inspection, devis, négociation, planification et réparation finale.</p>
+            <button (click)="navigateTo('requests-tracking')" class="btn btn-secondary mt-auto">Voir le Suivi</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Consulter l'Historique</h5>
+            <p class="card-text">Accédez à l'historique complet des opérations de maintenance curative réalisées sur l'ensemble de votre flotte de wagons.</p>
+            <button (click)="navigateTo('history')" class="btn btn-secondary mt-auto">Accéder à l'Historique</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Planning des Immobilisations</h5>
+            <p class="card-text">Visualisez le calendrier des interventions planifiées pour mieux anticiper l'immobilisation de vos wagons.</p>
+            <button (click)="navigateTo('planning')" class="btn btn-secondary mt-auto">Voir le Planning</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>

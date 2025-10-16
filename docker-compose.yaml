@@ -1,11 +1,24 @@
 version: "3.8"
 
 services:
+  webhook-db:
+    build: ./webhook_db
+    container_name: webhook-db
+    environment:
+      POSTGRES_USER: webhook
+      POSTGRES_PASSWORD: webhook
+      POSTGRES_DB: webhook_db
+    volumes:
+      - webhook_db_data:/var/lib/postgresql/data
+    ports:
+      - "5430:5432"
   webhook-service:
       build: ./webhook
       container_name: webhook-service
       ports:
         - "3008:3000"
+      depends_on:
+        - webhook-db
 
   db-devmaterial:
     build: ./db-devmaterial
@@ -107,6 +120,7 @@ services:
       - db-devmaterial
 
 volumes:
+  webhook_db_data:
   db_data_devmaterial:
   db_data_wagonlits:
   grafana-data:

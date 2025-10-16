@@ -211,10 +211,7 @@ app.patch('/api/demandes/:id', async (req, res) => {
     const allowed = [
         // english
         'fault_id','fault_type','comment','request_date','inspection_date','intervention_date',
-        'availability_date','estimate_price','report','estimate_validated','request_closed','client_id',
-        // french compatibility
-        'panne_id','type_panne','commentaire','date_demande','date_inspection','date_intervention',
-        'date_disponibilite','prix_devis','rapport','devis_valide','demande_cloturee'
+        'availability_date','estimate_price','report','estimate_validated','request_closed','client_id'
     ];
 
     const keys = Object.keys(req.body).filter(k => allowed.includes(k));

@@ -1,0 +1,18 @@
+<div class="container my-3">
+  <h3>Ajouter une demande</h3>
+
+  <form (ngSubmit)="submit()" #form="ngForm">
+    <div class="mb-3">
+  <label for="panne" class="form-label">ID panne (optionnel)</label>
+  <input id="panne" name="fault_id" class="form-control" [(ngModel)]="panne_id" />
+    </div>
+
+    <div class="mb-3">
+  <label for="type" class="form-label">Type de panne *</label>
+  <input id="type" name="fault_type" class="form-control" [(ngModel)]="type_panne" required />
+    </div>
+
+    <button class="btn btn-primary" type="submit" [disabled]="submitting">Créer</button>
+    <a routerLink="/demandes" class="btn btn-secondary ms-2">Annuler</a>
+  </form>
+</div>

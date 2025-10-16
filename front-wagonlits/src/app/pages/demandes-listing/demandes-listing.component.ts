@@ -31,6 +31,7 @@ export class DemandesListingComponent implements OnInit {
     this.isTriggering = true;
     this.triggerResult = null;
 
+    console.log('Triggering webhook...');
     const url = 'http://localhost:3008/trigger-event';
     const payload = {
       from: 'erp-wagonlits',
