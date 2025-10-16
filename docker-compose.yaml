@@ -46,59 +46,7 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
 
-  version: "3.8"
-
-services:
-  webhook-service:
-      build: ./webhook
-      container_name: webhook-service
-      ports:
-        - "3001:3000"
-
-  db-devmaterial:
-    build: ./db-devmaterial
-    container_name: db-devmaterial
-    ports:
-      - "5433:5432"
-    depends_on:
-      - webhook-service
-    environment:
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: devpass
-      POSTGRES_DB: db_devmaterial
-    volumes:
-      - db_data_devmaterial:/var/lib/postgresql/data
-
-  back-devmaterial:
-    build: ./back-devmaterial
-    container_name: back-devmaterial
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db-devmaterial
-    environment:
-      DB_HOST: db-devmaterial
-      DB_USER: devuser
-      DB_PASSWORD: devpass
-      DB_NAME: db_devmaterial
-      DB_PORT: 5432
-
-  front-devmaterial:
-    build:
-      context: ./front-devmaterial
-    container_name: front-devmaterial
-    ports:
-      - "4200:4200"
-    depends_on:
-      - back-devmaterial
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-
-volumes:
-  db_data_devmaterial:
-
-
-grafana:
+  grafana:
     image: grafana/grafana:11.2.0
     container_name: grafana
     ports:
@@ -116,6 +64,4 @@ grafana:
 
 volumes:
   db_data_devmaterial:
-  grafana-data:
-
-
+  grafana-data:
