@@ -1,26 +1,18 @@
 <div class="container my-3">
-  <h3>Liste des demandes de Wagon Lits</h3>
-  <div class="table-responsive">
-    <table class="table table-striped table-bordered">
-      <thead class="table-light">
-        <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Numéro</th>
-          <th scope="col">Type</th>
-          <th scope="col">Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let c of commandes">
-          <th scope="row">{{ c.id }}</th>
-          <td>{{ c.number }}</td>
-          <td>{{ c.type }}</td>
-          <td>{{ c.dateDemande | date:'yyyy-MM-dd' }}</td>
-        </tr>
-        <tr *ngIf="commandes.length === 0">
-          <td colspan="4" class="text-center text-muted">Aucune commande trouvée</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <h3>Ajouter une demande</h3>
+
+  <form (ngSubmit)="submit()" #form="ngForm">
+    <div class="mb-3">
+      <label for="panne" class="form-label">ID panne (optionnel)</label>
+      <input id="panne" name="panne_id" class="form-control" [(ngModel)]="panne_id" />
+    </div>
+
+    <div class="mb-3">
+      <label for="type" class="form-label">Type de panne *</label>
+      <input id="type" name="type_panne" class="form-control" [(ngModel)]="type_panne" required />
+    </div>
+
+    <button class="btn btn-primary" type="submit" [disabled]="submitting">Créer</button>
+    <a routerLink="/demandes" class="btn btn-secondary ms-2">Annuler</a>
+  </form>
 </div>
