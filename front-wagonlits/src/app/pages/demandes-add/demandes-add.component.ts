@@ -23,8 +23,8 @@ export class DemandesAddComponent {
     this.submitting = true;
     try {
       const resp: any = await this.http.post('/api/demandes', {
-        panne_id: this.panne_id || undefined,
-        type_panne: this.type_panne
+        fault_id: this.panne_id || undefined,
+        fault_type: this.type_panne
       }).toPromise();
       console.log('Created demande', resp);
       this.router.navigate(['/demandes']);
