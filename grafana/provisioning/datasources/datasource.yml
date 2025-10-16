@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL DevMateriels
+    type: postgres
+    access: proxy
+    url: db-devmaterial:5432
+    user: devuser
+    database: db_devmaterial
+    isDefault: true
+    secureJsonData:
+      password: devpass
+    jsonData:
+      sslmode: disable
