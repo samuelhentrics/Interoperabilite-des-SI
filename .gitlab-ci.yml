@@ -1,35 +1,107 @@
 stages:
   - build
   - security
+  - test
 
-build:
+# ===========================
+#  BUILD TEMPLATE
+# ===========================
+.default-node-build:
   image: node:20
   stage: build
   script:
-    - echo "Building webhook-service..."
-    - cd webhook
+    - echo "🚀 Building $CI_JOB_NAME..."
+    - cd $PROJECT_PATH
     - npm ci || npm install
     - npm run build --if-present
-    - cd ..
+  variables:
+    PROJECT_PATH: ""
 
-    - echo "Building back-devmaterial..."
-    - cd back-devmaterial
-    - npm ci || npm install
-    - npm run build --if-present
-    - cd ..
+# ===========================
+#  BUILD JOBS
+# ===========================
+build_webhook:
+  extends: .default-node-build
+  variables:
+    PROJECT_PATH: "webhook"
 
-    - echo "Building front-devmaterial..."
-    - cd front-devmaterial
-    - npm ci || npm install
-    - npm run build --if-present
+build_back_devmaterial:
+  extends: .default-node-build
+  variables:
+    PROJECT_PATH: "back-devmaterial"
 
+build_front_devmaterial:
+  extends: .default-node-build
+  variables:
+    PROJECT_PATH: "front-devmaterial"
+
+build_back_wagonlits:
+  extends: .default-node-build
+  variables:
+    PROJECT_PATH: "back-wagonlits"
+
+build_front_wagonlits:
+  extends: .default-node-build
+  variables:
+    PROJECT_PATH: "front-wagonlits"
+
+# ===========================
+#  SECURITY (SAST)
+# ===========================
 include:
   - template: Security/SAST.gitlab-ci.yml
 
 sast:
   stage: security
-  needs: ["build"]
+  needs:
+    - build_webhook
+    - build_back_devmaterial
+    - build_front_devmaterial
+    - build_back_wagonlits
+    - build_front_wagonlits
   variables:
     SAST_EXCLUDED_PATHS: "node_modules,dist"
     SAST_ANALYZER_IMAGE_TAG: "latest"
   allow_failure: false
+
+# ===========================
+#  TEST TEMPLATE
+# ===========================
+.default-node-test:
+  image: node:20
+  stage: test
+  script:
+    - echo "🧪 Testing $CI_JOB_NAME..."
+    - cd $PROJECT_PATH
+    - npm ci || npm install
+    - npm test --if-present
+  variables:
+    PROJECT_PATH: ""
+
+# ===========================
+#  TEST JOBS
+# ===========================
+test_webhook:
+  extends: .default-node-test
+  variables:
+    PROJECT_PATH: "webhook"
+
+test_back_devmaterial:
+  extends: .default-node-test
+  variables:
+    PROJECT_PATH: "back-devmaterial"
+
+test_front_devmaterial:
+  extends: .default-node-test
+  variables:
+    PROJECT_PATH: "front-devmaterial"
+
+test_back_wagonlits:
+  extends: .default-node-test
+  variables:
+    PROJECT_PATH: "back-wagonlits"
+
+test_front_wagonlits:
+  extends: .default-node-test
+  variables:
+    PROJECT_PATH: "front-wagonlits"

@@ -90,7 +90,7 @@ app.get('/health', (_req, res) => res.status(200).send({ ok: true }));
 
 /**
  * @swagger
- * /demandes:
+ * /api/demandes:
  *   get:
  *     summary: Liste toutes les demandes
  *     tags: [Demandes]
@@ -103,7 +103,7 @@ app.get('/health', (_req, res) => res.status(200).send({ ok: true }));
  *               type: array
  *               items: { $ref: '#/components/schemas/Demande' }
  */
-app.get('/demandes', async (_req, res) => {
+app.get('/api/demandes', async (_req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT id, numero, type, to_char("date",'YYYY-MM-DD') AS date
@@ -112,14 +112,14 @@ app.get('/demandes', async (_req, res) => {
     `);
     res.status(200).json(rows);
   } catch (err) {
-    console.error('GET /demandes error:', err);
+    console.error('GET /api/demandes error:', err);
     res.status(500).json({ error: 'Failed to fetch demandes' });
   }
 });
 
 /**
  * @swagger
- * /demandes/{id}:
+ * /api/demandes/{id}:
  *   get:
  *     summary: Récupère une demande par id
  *     tags: [Demandes]
@@ -137,7 +137,7 @@ app.get('/demandes', async (_req, res) => {
  *       400: { description: Invalid id }
  *       404: { description: Demande not found }
  */
-app.get('/demandes/:id', async (req, res) => {
+app.get('/api/demandes/:id', async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid id' });
@@ -151,14 +151,14 @@ app.get('/demandes/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
     res.status(200).json(rows[0]);
   } catch (err) {
-    console.error('GET /demandes/:id error:', err);
+    console.error('GET /api/demandes/:id error:', err);
     res.status(500).json({ error: 'Failed to fetch demande' });
   }
 });
 
 /**
  * @swagger
- * /demandes:
+ * /api/demandes:
  *   post:
  *     summary: Crée une nouvelle demande
  *     tags: [Demandes]
@@ -185,7 +185,7 @@ app.get('/demandes/:id', async (req, res) => {
  *             schema: { $ref: '#/components/schemas/Demande' }
  *       400: { description: Missing required fields }
  */
-app.post('/demandes', async (req, res) => {
+app.post('/api/demandes', async (req, res) => {
   try {
     const { numero, type, date } = req.body || {};
     if (!numero || !type) {
@@ -212,14 +212,14 @@ app.post('/demandes', async (req, res) => {
     const { rows } = await pool.query(sql, params);
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('POST /demandes error:', err);
+    console.error('POST /api/demandes error:', err);
     res.status(500).json({ error: 'Failed to create demande' });
   }
 });
 
 /**
  * @swagger
- * /demandes/{id}:
+ * /api/demandes/{id}:
  *   put:
  *     summary: Met à jour une demande (partiel)
  *     tags: [Demandes]
@@ -250,7 +250,7 @@ app.post('/demandes', async (req, res) => {
  *       400: { description: Invalid id / Nothing to update }
  *       404: { description: Demande not found }
  */
-app.put('/demandes/:id', async (req, res) => {
+app.put('/api/demandes/:id', async (req, res) => {
   try {
     const { id } = req.params;
     if (!isValidId(id)) return res.status(400).json({ error: 'Invalid id' });
@@ -279,7 +279,7 @@ app.put('/demandes/:id', async (req, res) => {
 
     res.status(200).json(rows[0]);
   } catch (err) {
-    console.error('PUT /demandes/:id error:', err);
+    console.error('PUT /api/demandes/:id error:', err);
     res.status(500).json({ error: 'Failed to update demande' });
   }
 });
@@ -306,7 +306,7 @@ async function subscribeToWebhook() {
     }
 
     try {
-        const who = process.env.WEBHOOK_WHO || 'back-devmaterial';
+        const who = process.env.WEBHOOK_WHO || 'erp-wagonlits';
         console.log(`➡️ Subscribing to webhook at ${subscribeUrl} as '${who}' with callback ${callbackUrl}`);
         const response = await fetch(subscribeUrl, {
             method: 'POST',
@@ -333,6 +333,6 @@ app.listen(PORT, () => {
     setTimeout(async () => {
         console.log('⏳ Tentative de connexion au webhook...');
         await subscribeToWebhook();
-    }, 2000);
+    }, 10000);
 
 });

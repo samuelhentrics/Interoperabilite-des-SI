@@ -52,31 +52,54 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  * @swagger
  * components:
  *   schemas:
- *     Commande:
+ *     Demande:
  *       type: object
- *       required:
- *         - number
- *         - type
- *         - dateDemande
  *       properties:
  *         id:
  *           type: integer
- *           description: L'ID auto-généré de la commande.
- *         number:
+ *         panne_id:
  *           type: string
- *           description: Le numéro de la commande.
- *         type:
+ *         type_panne:
  *           type: string
- *           description: Le type de matériel commandé.
- *         dateDemande:
+ *         commentaire:
  *           type: string
- *           format: date-time
- *           description: La date de la demande de commande.
+ *         date_demande:
+ *           type: string
+ *           format: date
+ *         date_inspection:
+ *           type: string
+ *           format: date
+ *         date_intervention:
+ *           type: string
+ *           format: date
+ *         date_disponibilite:
+ *           type: string
+ *           format: date
+ *         prix_devis:
+ *           type: number
+ *           format: double
+ *         rapport:
+ *           type: string
+ *         devis_valide:
+ *           type: boolean
+ *         demande_cloturee:
+ *           type: boolean
+ *         client_id:
+ *           type: integer
  *       example:
  *         id: 1
- *         number: "CMD-2025-001"
- *         type: "Ordinateur portable"
- *         dateDemande: "2025-10-15T09:00:00.000Z"
+ *         panne_id: "PANNE-001"
+ *         type_panne: "Electrique"
+ *         commentaire: "Problème intermittent"
+ *         date_demande: "2025-10-15"
+ *         date_inspection: null
+ *         date_intervention: null
+ *         date_disponibilite: null
+ *         prix_devis: 125.50
+ *         rapport: null
+ *         devis_valide: false
+ *         demande_cloturee: false
+ *         client_id: 42
  */
 
 // --- Routes de l'API ---
@@ -95,7 +118,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Commande'
+ *                 $ref: '#/components/schemas/Demande'
  */
 app.get("/api/demandes", async (req, res) => {
     try {
@@ -118,28 +141,107 @@ app.get("/api/demandes", async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Commande'
+ *             $ref: '#/components/schemas/Demande'
  *     responses:
  *       200:
  *         description: La commande a été créée avec succès.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Commande'
+ *               $ref: '#/components/schemas/Demande'
  *       500:
  *         description: Une erreur est survenue sur le serveur.
  */
-app.post("/api/demandes", async (req, res) => {
+app.post('/api/demandes', async (req, res) => {
     try {
-        const { number, type, dateDemande } = req.body;
-        const result = await pool.query(
-            "INSERT INTO demandes (number, type, dateDemande) VALUES ($1, $2, $3) RETURNING *",
-            [number, type, dateDemande]
-        );
-        res.json(result.rows[0]);
+        // Accept english field names (fault_type, comment, fault_id) and french compatibility
+        const {
+            id,
+            fault_id,
+            fault_type,
+            comment,
+            // french
+            panne_id,
+            type_panne,
+            commentaire
+        } = req.body;
+
+        const finalFaultId = fault_id || panne_id || null;
+        const finalFaultType = fault_type || type_panne;
+        const finalComment = comment || commentaire || null;
+
+        if (!finalFaultType) return res.status(400).json({ error: 'fault_type (or type_panne) is required' });
+
+        let result;
+        if (id) {
+            result = await pool.query(
+                `INSERT INTO demandes (id, fault_id, fault_type, comment, request_date) VALUES ($1, $2, $3, $4, CURRENT_DATE) RETURNING *`,
+                [id, finalFaultId, finalFaultType, finalComment]
+            );
+        } else {
+            result = await pool.query(
+                `INSERT INTO demandes (fault_id, fault_type, comment, request_date) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`,
+                [finalFaultId, finalFaultType, finalComment]
+            );
+        }
+        return res.json(result.rows[0]);
     } catch (err) {
         console.error('Erreur lors de la création de la demande :', err);
-        res.status(500).json({ error: 'Erreur serveur' });
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Get single demande by id
+app.get('/api/demandes/:id', async (req, res) => {
+    const id = req.params.id; // accept UUID string
+    try {
+        const result = await pool.query('SELECT * FROM demandes WHERE id = $1', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
+        return res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Erreur lors de la récupération de la demande :', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Patch partial update by id (update per field)
+app.patch('/api/demandes/:id', async (req, res) => {
+    const id = req.params.id; // accept UUID
+
+    const allowed = [
+        // english
+        'fault_id','fault_type','comment','request_date','inspection_date','intervention_date',
+        'availability_date','estimate_price','report','estimate_validated','request_closed','client_id'
+    ];
+
+    const keys = Object.keys(req.body).filter(k => allowed.includes(k));
+    if (keys.length === 0) return res.status(400).json({ error: 'No valid fields to update' });
+
+    const setClauses = keys.map((k, i) => `${k} = $${i+1}`).join(', ');
+    const values = keys.map(k => req.body[k]);
+    values.push(id);
+
+    const query = `UPDATE demandes SET ${setClauses} WHERE id = $${keys.length + 1} RETURNING *`;
+    try {
+        const result = await pool.query(query, values);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
+        return res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Erreur lors de la mise à jour de la demande :', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Delete demande by id
+app.delete('/api/demandes/:id', async (req, res) => {
+    const id = req.params.id; // accept UUID
+    try {
+        const result = await pool.query('DELETE FROM demandes WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
+        return res.json({ message: 'Demande deleted', deleted: result.rows[0] });
+    } catch (err) {
+        console.error('Erreur lors de la suppression de la demande :', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
@@ -165,7 +267,7 @@ async function subscribeToWebhook() {
     }
 
     try {
-        const who = process.env.WEBHOOK_WHO || 'back-devmaterial';
+        const who = process.env.WEBHOOK_WHO || 'erp-devmaterial';
         console.log(`➡️ Subscribing to webhook at ${subscribeUrl} as '${who}' with callback ${callbackUrl}`);
         const response = await fetch(subscribeUrl, {
             method: 'POST',
@@ -192,6 +294,6 @@ app.listen(port, async () => {
     setTimeout(async () => {
         console.log('⏳ Tentative de connexion au webhook...');
         await subscribeToWebhook();
-    }, 2000);
+    }, 10000);
 
 });

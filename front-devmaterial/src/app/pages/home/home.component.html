@@ -1,1 +1,94 @@
-<p>home works!</p>
+<div class="container-fluid p-4">
+
+  <header class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h2">Tableau de Bord - ERP DEMAT</h1>
+      <p class="text-muted">Bonjour {{ userName }}, bienvenue sur votre espace de travail.</p>
+    </div>
+    <div>
+      <span class="fw-bold">{{ currentDate | date: 'fullDate':'':'fr' }}</span>
+    </div>
+  </header>
+
+  <section class="row mb-4">
+    <div class="col-md-3">
+      <div class="card text-white bg-primary h-100">
+        <div class="card-body">
+          <h5 class="card-title">Nouvelles Commandes</h5>
+          <p class="display-4">5</p>
+          <p class="card-text">Commandes clients à traiter.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-info h-100">
+        <div class="card-body">
+          <h5 class="card-title">Devis en attente</h5>
+          <p class="display-4">8</p>
+          <p class="card-text">En attente de validation client.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <h5 class="card-title">Interventions à venir</h5>
+                <p class="display-4">12</p>
+                <p class="card-text">Planifiées cette semaine.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-white bg-danger h-100">
+        <div class="card-body">
+          <h5 class="card-title">Alertes Stock Critique</h5>
+          <p class="display-4">24</p>
+          <p class="card-text">Pièces en rupture ou sous seuil.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="h4 mb-3">Accès Rapides</h2>
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Gestion des Commandes Clients</h5>
+            <p class="card-text">Saisir, consulter et suivre l'état des commandes pour WagonLits et ConstructWagons.</p>
+            <button (click)="navigateTo('orders')" class="btn btn-secondary mt-auto">Accéder aux Commandes</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Planification des Interventions</h5>
+            <p class="card-text">Gérer le planning des inspections et des réparations. Assigner les équipes.</p>
+            <button (click)="navigateTo('planning')" class="btn btn-secondary mt-auto">Voir le Planning</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Gestion des Stocks</h5>
+            <p class="card-text">Suivre les niveaux de stock, anticiper les ruptures et lancer les réapprovisionnements.</p>
+            <button (click)="navigateTo('stocks')" class="btn btn-secondary mt-auto">Gérer les Stocks</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">Devis et Facturation</h5>
+            <p class="card-text">Élaborer les devis, suivre les négociations et déclencher la facturation.</p>
+            <button (click)="navigateTo('billing')" class="btn btn-secondary mt-auto">Accéder à la Facturation</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
