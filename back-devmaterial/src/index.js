@@ -165,14 +165,16 @@ async function subscribeToWebhook() {
     }
 
     try {
+        const who = process.env.WEBHOOK_WHO || 'back-devmaterial';
+        console.log(`➡️ Subscribing to webhook at ${subscribeUrl} as '${who}' with callback ${callbackUrl}`);
         const response = await fetch(subscribeUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: callbackUrl }),
+            body: JSON.stringify({ who, url: callbackUrl }),
         });
 
         if (response.ok) {
-            console.log(`✅ Connecté au webhook : ${subscribeUrl}`);
+            console.log(`✅ Connecté au webhook : ${subscribeUrl} (who=${who})`);
         } else {
             const text = await response.text().catch(() => '<no body>');
             console.error('❌ Erreur lors de la connexion au webhook :', text);

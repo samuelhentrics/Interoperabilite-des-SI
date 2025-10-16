@@ -14,10 +14,11 @@ type Event = {
 const app = express();
 app.use(bodyParser.json());
 
-let subscribedUrl: string | null = null;
+type Subscriber = { who: string; url: string };
+let subscribers: Subscriber[] = [];
 const SECRET = 'your-secret-key';
 
-function generateHmac(data: Event): string {
+function generateHmac(data: any): string {
     const hmac = crypto.createHmac('sha256', SECRET);
     return hmac.update(JSON.stringify(data)).digest('hex');
 }
@@ -27,56 +28,111 @@ app.post('/test', (req: Request, res: Response) => {
 });
 
 app.post('/subscribe', (req: Request, res: Response) => {
-    const { url } = req.body;
+    const { who, url } = req.body;
 
-    if (!url) {
-        return res.status(400).send({ error: 'URL is required for subscription' });
+    if (!who || typeof who !== 'string') {
+        return res.status(400).send({ error: 'Field "who" (string) is required for subscription' });
+    }
+    if (!url || typeof url !== 'string') {
+        return res.status(400).send({ error: 'Field "url" (string) is required for subscription' });
     }
 
-    subscribedUrl = url;
-    console.log(`Client subscribed to: ${url}`);
+    // Avoid duplicates by who+url
+    const exists = subscribers.find(s => s.who === who && s.url === url);
+    if (exists) {
+        return res.status(200).send({ message: 'Already subscribed', subscriber: exists });
+    }
 
-    return res.status(200).send({ message: 'Subscription successful' });
+    const sub: Subscriber = { who, url };
+    subscribers.push(sub);
+    console.log(`Client subscribed: ${who} -> ${url}`);
+
+    return res.status(200).send({ message: 'Subscription successful', subscriber: sub });
+});
+
+// List subscribers (for debug)
+app.get('/subscribers', (_req: Request, res: Response) => {
+    return res.status(200).send({ subscribers });
+});
+
+// Unsubscribe endpoint
+app.post('/unsubscribe', (req: Request, res: Response) => {
+    const { who, url } = req.body;
+    if (!who || typeof who !== 'string') {
+        return res.status(400).send({ error: 'Field "who" (string) is required to unsubscribe' });
+    }
+
+    const before = subscribers.length;
+    if (url && typeof url === 'string') {
+        subscribers = subscribers.filter(s => !(s.who === who && s.url === url));
+    } else {
+        // remove all subscriptions for who
+        subscribers = subscribers.filter(s => s.who !== who);
+    }
+
+    const after = subscribers.length;
+    return res.status(200).send({ message: 'Unsubscribed', removed: before - after });
 });
 
 app.post('/trigger-event', async (req: Request, res: Response) => {
-    if (!subscribedUrl) {
-        return res.status(400).send({ error: 'No client subscribed' });
+    const { from, event, body, who } = req.body as { from?: string; event?: string; body?: any; who?: string[] };
+
+    if (!from || typeof from !== 'string') {
+        return res.status(400).send({ error: 'Field "from" (string) is required' });
+    }
+    if (!event || typeof event !== 'string') {
+        return res.status(400).send({ error: 'Field "event" (string) is required' });
     }
 
-    const eventData: Event = {
-        event: 'user_registered',
-        user: {
-            id: 1,
-            name: 'John Doe',
-            email: 'john.doe@example.com'
-        }
+    // Build event payload; include sender identity
+    const payload = {
+        event,
+        from,
+        body: body || null
     };
 
-    const hmacSignature = generateHmac(eventData);
+    const hmacSignature = generateHmac(payload);
 
-    try {
-    
-        const result = await fetch(subscribedUrl, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Signature': hmacSignature
-            },
-            body: JSON.stringify(eventData)
-        });
-
-        if (result.ok) {
-            console.log('Notification sent successfully');
-            return res.status(200).send({ message: 'Event triggered and notification sent' });
-        } else {
-            console.error('Failed to send notification');
-            return res.status(500).send({ error: 'Failed to send notification' });
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        return res.status(500).send({ error: 'Error while sending notification' });
+    // If who is not provided or empty array -> send to nobody (per spec)
+    if (!who || !Array.isArray(who) || who.length === 0) {
+        return res.status(200).send({ message: 'No recipients specified; nothing sent' });
     }
+
+    // Find subscribers matching any of the requested 'who'
+    const targets = subscribers.filter(s => who.includes(s.who));
+
+    if (targets.length === 0) {
+        return res.status(200).send({ message: 'No matching subscribers found' });
+    }
+
+    const results: { who: string; url: string; ok: boolean; status?: number; error?: string }[] = [];
+
+    await Promise.all(targets.map(async (t) => {
+        try {
+            const r = await fetch(t.url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Signature': hmacSignature
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (r.ok) {
+                console.log(`Notification sent to ${t.who} -> ${t.url}`);
+                results.push({ who: t.who, url: t.url, ok: true, status: r.status });
+            } else {
+                const text = await r.text().catch(() => '<no body>');
+                console.error(`Failed to send notification to ${t.who} -> ${t.url}: ${text}`);
+                results.push({ who: t.who, url: t.url, ok: false, status: r.status, error: text });
+            }
+        } catch (err: any) {
+            console.error(`Error sending to ${t.who} -> ${t.url}:`, err && err.message ? err.message : err);
+            results.push({ who: t.who, url: t.url, ok: false, error: err && err.message ? err.message : String(err) });
+        }
+    }));
+
+    return res.status(200).send({ message: 'Event processed', results });
 });
 
 const PORT = 3000;
