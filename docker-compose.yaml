@@ -1,6 +1,9 @@
 version: "3.8"
 
 services:
+  # ======================
+  # === DEV MATERIAL ==== 
+  # ======================
   db-devmaterial:
     build: ./db-devmaterial
     container_name: db-devmaterial
@@ -16,27 +19,70 @@ services:
   back-devmaterial:
     build: ./back-devmaterial
     container_name: back-devmaterial
-    ports:
-      - "3000:3000"
     depends_on:
       - db-devmaterial
     environment:
+      PORT: 3000
       DB_HOST: db-devmaterial
       DB_USER: devuser
       DB_PASSWORD: devpass
       DB_NAME: db_devmaterial
       DB_PORT: 5432
+    ports:
+      - "3000:3000"
 
   front-devmaterial:
     build:
       context: ./front-devmaterial
     container_name: front-devmaterial
-    ports:
-      - "4200:4200"
     depends_on:
       - back-devmaterial
     environment:
       - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "4200:4200"
+
+  # ==================
+  # === WAGONLITS ====
+  # ==================
+  db-wagonlits:
+    build: ./db-wagonlits
+    container_name: db-wagonlits
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: wagonpass
+      POSTGRES_DB: db_wagonlits
+    volumes:
+      - db_data_wagonlits:/var/lib/postgresql/data
+
+  back-wagonlits:
+    build: ./back-wagonlits
+    container_name: back-wagonlits
+    depends_on:
+      - db-wagonlits
+    environment:
+      PORT: 3001
+      DB_HOST: db-wagonlits
+      DB_USER: devuser
+      DB_PASSWORD: wagonpass
+      DB_NAME: db_wagonlits
+      DB_PORT: 5432
+    ports:
+      - "3001:3001"
+
+  front-wagonlits:
+    build:
+      context: ./front-wagonlits
+    container_name: front-wagonlits
+    depends_on:
+      - back-wagonlits
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "4201:4200"
 
 volumes:
   db_data_devmaterial:
+  db_data_wagonlits:
