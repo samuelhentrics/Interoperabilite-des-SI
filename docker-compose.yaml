@@ -20,6 +20,17 @@ services:
       depends_on:
         - webhook-db
 
+  pgadmin:
+    image: dpage/pgadmin4:7.7
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - webhook-db
+
   db-devmaterial:
     build: ./db-devmaterial
     container_name: db-devmaterial
@@ -121,6 +132,7 @@ services:
 
 volumes:
   webhook_db_data:
+  pgadmin-data:
   db_data_devmaterial:
   db_data_wagonlits:
   grafana-data:
