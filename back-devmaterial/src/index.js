@@ -2,10 +2,15 @@ import express from "express";
 import pkg from "pg";
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
+import cors from 'cors';
 
 const { Pool } = pkg;
 const app = express();
 const port = 3000;
+
+// --- Middlewares globaux ---
+app.use(cors());
+app.use(express.json());
 
 // --- Configuration de la base de données ---
 const pool = new Pool({
@@ -15,8 +20,6 @@ const pool = new Pool({
   password: "devpass",
   port: 5432
 });
-
-app.use(express.json());
 
 // --- Configuration de Swagger ---
 const swaggerOptions = {
@@ -93,8 +96,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *                 $ref: '#/components/schemas/Commande'
  */
 app.get("/api/commandes", async (req, res) => {
-  const result = await pool.query("SELECT * FROM commandes ORDER BY id ASC");
-  res.json(result.rows);
+  try {
+    const result = await pool.query("SELECT * FROM commandes ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des commandes :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 /**
@@ -120,12 +128,17 @@ app.get("/api/commandes", async (req, res) => {
  *         description: Une erreur est survenue sur le serveur.
  */
 app.post("/api/commandes", async (req, res) => {
-  const { number, type, dateDemande } = req.body;
-  const result = await pool.query(
-    "INSERT INTO commandes (number, type, dateDemande) VALUES ($1, $2, $3) RETURNING *",
-    [number, type, dateDemande]
-  );
-  res.json(result.rows[0]);
+  try {
+    const { number, type, dateDemande } = req.body;
+    const result = await pool.query(
+      "INSERT INTO commandes (number, type, dateDemande) VALUES ($1, $2, $3) RETURNING *",
+      [number, type, dateDemande]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erreur lors de la création de la commande :', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 app.listen(port, () => {
