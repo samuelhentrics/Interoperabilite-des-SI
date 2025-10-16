@@ -28,9 +28,9 @@ const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'API DevMaterial',
-            version: '1.0.0',
-            description: 'Documentation de l\'API pour la gestion des commandes de matériel.',
+                title: 'API DevMaterial',
+                    version: '1.0.0',
+                    description: 'Documentation de l\'API pour la gestion des demandes de matériel.',
         },
         servers: [
             {
@@ -83,13 +83,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /**
  * @swagger
- * /api/commandes:
+ * /api/demandes:
  *   get:
- *     summary: Récupère la liste de toutes les commandes
- *     tags: [Commandes]
+ *     summary: Récupère la liste de toutes les demandes
+ *     tags: [Demandes]
  *     responses:
  *       200:
- *         description: La liste des commandes a été récupérée avec succès.
+ *         description: La liste des demandes a été récupérée avec succès.
  *         content:
  *           application/json:
  *             schema:
@@ -97,22 +97,22 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *               items:
  *                 $ref: '#/components/schemas/Commande'
  */
-app.get("/api/commandes", async (req, res) => {
+app.get("/api/demandes", async (req, res) => {
     try {
-        const result = await pool.query("SELECT * FROM commandes ORDER BY id ASC");
+        const result = await pool.query("SELECT * FROM demandes ORDER BY id ASC");
         res.json(result.rows);
     } catch (err) {
-        console.error('Erreur lors de la récupération des commandes :', err);
+        console.error('Erreur lors de la récupération des demandes :', err);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
 /**
  * @swagger
- * /api/commandes:
+ * /api/demandes:
  *   post:
- *     summary: Crée une nouvelle commande
- *     tags: [Commandes]
+ *     summary: Crée une nouvelle demande
+ *     tags: [Demandes]
  *     requestBody:
  *       required: true
  *       content:
@@ -129,35 +129,69 @@ app.get("/api/commandes", async (req, res) => {
  *       500:
  *         description: Une erreur est survenue sur le serveur.
  */
-app.post("/api/commandes", async (req, res) => {
+app.post("/api/demandes", async (req, res) => {
     try {
         const { number, type, dateDemande } = req.body;
         const result = await pool.query(
-            "INSERT INTO commandes (number, type, dateDemande) VALUES ($1, $2, $3) RETURNING *",
+            "INSERT INTO demandes (number, type, dateDemande) VALUES ($1, $2, $3) RETURNING *",
             [number, type, dateDemande]
         );
         res.json(result.rows[0]);
     } catch (err) {
-        console.error('Erreur lors de la création de la commande :', err);
+        console.error('Erreur lors de la création de la demande :', err);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
+// --- webhook ---
+app.post("/webhook", (req, res) => {
+    const signature = req.headers["x-signature"];
+    const payload = JSON.stringify(req.body);
+
+    console.log("📩 Webhook reçu :", payload);
+    console.log("🔐 Signature :", signature);
+
+    res.status(200).send({ message: "Event received" });
+});
+
+
+async function subscribeToWebhook() {
+    const subscribeUrl = process.env.WEBHOOK_SUBSCRIBE_URL;
+    const callbackUrl = process.env.CALLBACK_URL || `http://localhost:${port}/webhook`;
+
+    if (!subscribeUrl) {
+        console.warn('⚠️ WEBHOOK_SUBSCRIBE_URL is not defined — skipping webhook subscription');
+        return;
+    }
+
+    try {
+        const who = process.env.WEBHOOK_WHO || 'back-devmaterial';
+        console.log(`➡️ Subscribing to webhook at ${subscribeUrl} as '${who}' with callback ${callbackUrl}`);
+        const response = await fetch(subscribeUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ who, url: callbackUrl }),
+        });
+
+        if (response.ok) {
+            console.log(`✅ Connecté au webhook : ${subscribeUrl} (who=${who})`);
+        } else {
+            const text = await response.text().catch(() => '<no body>');
+            console.error('❌ Erreur lors de la connexion au webhook :', text);
+        }
+    } catch (err) {
+        console.error('⚠️ Impossible de se connecter au webhook :', err && err.message ? err.message : err);
+    }
+}
 
 app.listen(port, async () => {
     console.log(`✅ Backend running on port ${port}`);
     console.log(`📄 Documentation API disponible sur http://localhost:${port}/api-docs`);
 
     // Connexion au webhook
-    if (process.env.WEBHOOK_URL) {
-        try {
-            const response = await fetch(process.env.WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "started", service: "back-devmaterial" }),
-            });
-            console.log(`🔗 Webhook connecté : ${process.env.WEBHOOK_URL} (${response.status})`);
-        } catch (err) {
-            console.error("❌ Erreur lors de la connexion au webhook :", err.message);
-        }
-    }
+    setTimeout(async () => {
+        console.log('⏳ Tentative de connexion au webhook...');
+        await subscribeToWebhook();
+    }, 2000);
+
 });

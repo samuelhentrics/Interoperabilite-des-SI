@@ -1,0 +1,23 @@
+stages:
+  - build
+
+build:
+  image: node:20
+  stage: build
+  script:
+    - echo "Building webhook-service..."
+    - cd webhook
+    - npm ci || npm install
+    - npm run build --if-present
+    - cd ..
+
+    - echo "Building back-devmaterial..."
+    - cd back-devmaterial
+    - npm ci || npm install
+    - npm run build --if-present
+    - cd ..
+
+    - echo "Building front-devmaterial..."
+    - cd front-devmaterial
+    - npm ci || npm install
+    - npm run build --if-present

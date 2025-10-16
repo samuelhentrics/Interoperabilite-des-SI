@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export interface Commande {
+export interface Demande {
   id: number;
   number: string;
   type: string;
@@ -12,12 +12,12 @@ export interface Commande {
 @Injectable({
   providedIn: 'root'
 })
-export class CommandesService {
-  private apiUrl = 'http://localhost:3000/api/commandes'; // URL de ton back
+export class DemandesService {
+  private apiUrl = 'http://localhost:3000/api/demandes'; // URL de ton back
 
   constructor(private http: HttpClient) {}
 
-  getCommandes(): Observable<Commande[]> {
-    return this.http.get<Commande[]>(this.apiUrl);
+  getDemandes(): Observable<Demande[]> {
+    return this.http.get<Demande[]>(this.apiUrl);
   }
 }

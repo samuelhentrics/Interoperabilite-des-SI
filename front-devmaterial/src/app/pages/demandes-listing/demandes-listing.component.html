@@ -11,14 +11,14 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let c of commandes">
-          <th scope="row">{{ c.id }}</th>
-          <td>{{ c.number }}</td>
-          <td>{{ c.type }}</td>
-          <td>{{ c.dateDemande | date:'yyyy-MM-dd' }}</td>
+        <tr *ngFor="let d of demandes">
+          <th scope="row">{{ d.id }}</th>
+          <td>{{ d.number }}</td>
+          <td>{{ d.type }}</td>
+          <td>{{ d.dateDemande | date:'yyyy-MM-dd' }}</td>
         </tr>
-        <tr *ngIf="commandes.length === 0">
-          <td colspan="4" class="text-center text-muted">Aucune commande trouvée</td>
+        <tr *ngIf="demandes.length === 0">
+          <td colspan="4" class="text-center text-muted">Aucune demande trouvée</td>
         </tr>
       </tbody>
     </table>

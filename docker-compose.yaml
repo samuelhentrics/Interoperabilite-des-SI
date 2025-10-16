@@ -1,14 +1,19 @@
 version: "3.8"
 
 services:
-  # ======================
-  # === DEV MATERIAL ==== 
-  # ======================
+  webhook-service:
+      build: ./webhook
+      container_name: webhook-service
+      ports:
+        - "3001:3000"
+
   db-devmaterial:
     build: ./db-devmaterial
     container_name: db-devmaterial
     ports:
       - "5433:5432"
+    depends_on:
+      - webhook-service
     environment:
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: devpass
@@ -83,6 +88,23 @@ services:
     ports:
       - "4201:4200"
 
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    ports:
+      - "3030:3000"              # Grafana UI on http://localhost:3030
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_ROOT_URL=http://localhost:3030
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - db-devmaterial
+
 volumes:
   db_data_devmaterial:
   db_data_wagonlits:
+  grafana-data:

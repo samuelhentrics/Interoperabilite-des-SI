@@ -1,0 +1,54 @@
+# Misc
+.DS_Store
+
+# Dependencies
+node_modules/
+.npm
+
+# Outputs
+build
+!sh/build
+coverage
+documentation
+.eslintcache
+tsconfig.tsbuildinfo
+
+# Logs
+logs
+*.log
+*.log.*
+npm-debug.log*
+
+# Secrets
+secrets
+*.secret.*
+*.secret
+
+# Temporary
+temp
+*.temp.*
+*.temp
+tmp
+*.tmp.*
+*.tmp
+
+# Local files
+local
+*.local
+*.local.*
+*.envrc*
+!.env.tpl
+.env
+.env.*
+*.env
+*.envrc
+
+# Verdaccio
+conf/verdaccio/storage
+
+# Python
+__pycache__
+.direnv
+
+# Ignore generated credentials from google-github-actions/auth
+gha-creds-*.json
