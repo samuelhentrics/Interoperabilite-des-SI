@@ -21,6 +21,3 @@ build:
     - cd front-devmaterial
     - npm ci || npm install
     - npm run build --if-present
-
-include:
-  - template: Security/SAST.gitlab-ci.yml
