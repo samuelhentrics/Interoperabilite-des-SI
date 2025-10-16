@@ -107,4 +107,4 @@ services:
 volumes:
   db_data_devmaterial:
   db_data_wagonlits:
-  grafana-data:
+  grafana-data:

@@ -284,7 +284,55 @@ app.put('/demandes/:id', async (req, res) => {
   }
 });
 
+// --- webhook ---
+app.post("/webhook", (req, res) => {
+    const signature = req.headers["x-signature"];
+    const payload = JSON.stringify(req.body);
+
+    console.log("📩 Webhook reçu :", payload);
+    console.log("🔐 Signature :", signature);
+
+    res.status(200).send({ message: "Event received" });
+});
+
+
+async function subscribeToWebhook() {
+    const subscribeUrl = process.env.WEBHOOK_SUBSCRIBE_URL;
+    const callbackUrl = process.env.CALLBACK_URL || `http://localhost:${port}/webhook`;
+
+    if (!subscribeUrl) {
+        console.warn('⚠️ WEBHOOK_SUBSCRIBE_URL is not defined — skipping webhook subscription');
+        return;
+    }
+
+    try {
+        const who = process.env.WEBHOOK_WHO || 'back-devmaterial';
+        console.log(`➡️ Subscribing to webhook at ${subscribeUrl} as '${who}' with callback ${callbackUrl}`);
+        const response = await fetch(subscribeUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ who, url: callbackUrl }),
+        });
+
+        if (response.ok) {
+            console.log(`✅ Connecté au webhook : ${subscribeUrl} (who=${who})`);
+        } else {
+            const text = await response.text().catch(() => '<no body>');
+            console.error('❌ Erreur lors de la connexion au webhook :', text);
+        }
+    } catch (err) {
+        console.error('⚠️ Impossible de se connecter au webhook :', err && err.message ? err.message : err);
+    }
+}
+
 app.listen(PORT, () => {
   console.log(`✅ back-wagonlits on http://0.0.0.0:${PORT}`);
   console.log(`📄 Swagger UI on http://localhost:${PORT}/api-docs`);
+
+  // Connexion au webhook
+    setTimeout(async () => {
+        console.log('⏳ Tentative de connexion au webhook...');
+        await subscribeToWebhook();
+    }, 2000);
+
 });
