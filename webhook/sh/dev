@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+SH_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+ROOT_DIR="$(dirname "$SH_DIR")"
+
+ROOT_VOLUME=${ROOT_VOLUME:-$ROOT_DIR}
+
+docker run -it --rm \
+    -v "$ROOT_VOLUME:/home" \
+    -w "/home" \
+    node:21.6.1-alpine3.19 sh

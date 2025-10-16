@@ -143,21 +143,53 @@ app.post("/api/commandes", async (req, res) => {
     }
 });
 
+// --- webhook ---
+app.post("/webhook", (req, res) => {
+    const signature = req.headers["x-signature"];
+    const payload = JSON.stringify(req.body);
+
+    console.log("📩 Webhook reçu :", payload);
+    console.log("🔐 Signature :", signature);
+
+    res.status(200).send({ message: "Event received" });
+});
+
+
+async function subscribeToWebhook() {
+    const subscribeUrl = process.env.WEBHOOK_SUBSCRIBE_URL;
+    const callbackUrl = process.env.CALLBACK_URL || `http://localhost:${port}/webhook`;
+
+    if (!subscribeUrl) {
+        console.warn('⚠️ WEBHOOK_SUBSCRIBE_URL is not defined — skipping webhook subscription');
+        return;
+    }
+
+    try {
+        const response = await fetch(subscribeUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: callbackUrl }),
+        });
+
+        if (response.ok) {
+            console.log(`✅ Connecté au webhook : ${subscribeUrl}`);
+        } else {
+            const text = await response.text().catch(() => '<no body>');
+            console.error('❌ Erreur lors de la connexion au webhook :', text);
+        }
+    } catch (err) {
+        console.error('⚠️ Impossible de se connecter au webhook :', err && err.message ? err.message : err);
+    }
+}
+
 app.listen(port, async () => {
     console.log(`✅ Backend running on port ${port}`);
     console.log(`📄 Documentation API disponible sur http://localhost:${port}/api-docs`);
 
     // Connexion au webhook
-    if (process.env.WEBHOOK_URL) {
-        try {
-            const response = await fetch(process.env.WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "started", service: "back-devmaterial" }),
-            });
-            console.log(`🔗 Webhook connecté : ${process.env.WEBHOOK_URL} (${response.status})`);
-        } catch (err) {
-            console.error("❌ Erreur lors de la connexion au webhook :", err.message);
-        }
-    }
+    setTimeout(async () => {
+        console.log('⏳ Tentative de connexion au webhook...');
+        await subscribeToWebhook();
+    }, 2000);
+
 });
