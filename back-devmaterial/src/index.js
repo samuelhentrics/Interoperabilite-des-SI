@@ -118,7 +118,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Commande'
+ *                 $ref: '#/components/schemas/Demande'
  */
 app.get("/api/demandes", async (req, res) => {
     try {
@@ -141,48 +141,59 @@ app.get("/api/demandes", async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Commande'
+ *             $ref: '#/components/schemas/Demande'
  *     responses:
  *       200:
  *         description: La commande a été créée avec succès.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Commande'
+ *               $ref: '#/components/schemas/Demande'
  *       500:
  *         description: Une erreur est survenue sur le serveur.
  */
-app.post("/api/demandes", async (req, res) => {
+app.post('/api/demandes', async (req, res) => {
     try {
-        // Only accept type_panne and commentaire for creation
-        const { id, type_panne, commentaire } = req.body;
-        if (!type_panne) return res.status(400).json({ error: 'type_panne is required' });
+        // Accept english field names (fault_type, comment, fault_id) and french compatibility
+        const {
+            id,
+            fault_id,
+            fault_type,
+            comment,
+            // french
+            panne_id,
+            type_panne,
+            commentaire
+        } = req.body;
 
+        const finalFaultId = fault_id || panne_id || null;
+        const finalFaultType = fault_type || type_panne;
+        const finalComment = comment || commentaire || null;
+
+        if (!finalFaultType) return res.status(400).json({ error: 'fault_type (or type_panne) is required' });
+
+        let result;
         if (id) {
-            // insert with provided UUID
-            const result = await pool.query(
-                `INSERT INTO demandes (id, type_panne, commentaire, date_demande) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`,
-                [id, type_panne, commentaire || null]
+            result = await pool.query(
+                `INSERT INTO demandes (id, fault_id, fault_type, comment, request_date) VALUES ($1, $2, $3, $4, CURRENT_DATE) RETURNING *`,
+                [id, finalFaultId, finalFaultType, finalComment]
             );
-            res.json(result.rows[0]);
         } else {
-            const result = await pool.query(
-                `INSERT INTO demandes (type_panne, commentaire, date_demande) VALUES ($1, $2, CURRENT_DATE) RETURNING *`,
-                [type_panne, commentaire || null]
+            result = await pool.query(
+                `INSERT INTO demandes (fault_id, fault_type, comment, request_date) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`,
+                [finalFaultId, finalFaultType, finalComment]
             );
-            res.json(result.rows[0]);
         }
-        res.json(result.rows[0]);
+        return res.json(result.rows[0]);
     } catch (err) {
         console.error('Erreur lors de la création de la demande :', err);
-        res.status(500).json({ error: 'Erreur serveur' });
+        return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
 // Get single demande by id
 app.get('/api/demandes/:id', async (req, res) => {
-    const id = parseInt(req.params.id, 10);
-    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    const id = req.params.id; // accept UUID string
     try {
         const result = await pool.query('SELECT * FROM demandes WHERE id = $1', [id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
@@ -195,12 +206,15 @@ app.get('/api/demandes/:id', async (req, res) => {
 
 // Patch partial update by id (update per field)
 app.patch('/api/demandes/:id', async (req, res) => {
-    const id = parseInt(req.params.id, 10);
-    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    const id = req.params.id; // accept UUID
 
     const allowed = [
+        // english
+        'fault_id','fault_type','comment','request_date','inspection_date','intervention_date',
+        'availability_date','estimate_price','report','estimate_validated','request_closed','client_id',
+        // french compatibility
         'panne_id','type_panne','commentaire','date_demande','date_inspection','date_intervention',
-        'date_disponibilite','prix_devis','rapport','devis_valide','demande_cloturee','client_id'
+        'date_disponibilite','prix_devis','rapport','devis_valide','demande_cloturee'
     ];
 
     const keys = Object.keys(req.body).filter(k => allowed.includes(k));
@@ -223,8 +237,7 @@ app.patch('/api/demandes/:id', async (req, res) => {
 
 // Delete demande by id
 app.delete('/api/demandes/:id', async (req, res) => {
-    const id = parseInt(req.params.id, 10);
-    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    const id = req.params.id; // accept UUID
     try {
         const result = await pool.query('DELETE FROM demandes WHERE id = $1 RETURNING *', [id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
