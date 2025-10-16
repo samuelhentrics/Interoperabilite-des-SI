@@ -52,31 +52,54 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  * @swagger
  * components:
  *   schemas:
- *     Commande:
+ *     Demande:
  *       type: object
- *       required:
- *         - number
- *         - type
- *         - dateDemande
  *       properties:
  *         id:
  *           type: integer
- *           description: L'ID auto-généré de la commande.
- *         number:
+ *         panne_id:
  *           type: string
- *           description: Le numéro de la commande.
- *         type:
+ *         type_panne:
  *           type: string
- *           description: Le type de matériel commandé.
- *         dateDemande:
+ *         commentaire:
  *           type: string
- *           format: date-time
- *           description: La date de la demande de commande.
+ *         date_demande:
+ *           type: string
+ *           format: date
+ *         date_inspection:
+ *           type: string
+ *           format: date
+ *         date_intervention:
+ *           type: string
+ *           format: date
+ *         date_disponibilite:
+ *           type: string
+ *           format: date
+ *         prix_devis:
+ *           type: number
+ *           format: double
+ *         rapport:
+ *           type: string
+ *         devis_valide:
+ *           type: boolean
+ *         demande_cloturee:
+ *           type: boolean
+ *         client_id:
+ *           type: integer
  *       example:
  *         id: 1
- *         number: "CMD-2025-001"
- *         type: "Ordinateur portable"
- *         dateDemande: "2025-10-15T09:00:00.000Z"
+ *         panne_id: "PANNE-001"
+ *         type_panne: "Electrique"
+ *         commentaire: "Problème intermittent"
+ *         date_demande: "2025-10-15"
+ *         date_inspection: null
+ *         date_intervention: null
+ *         date_disponibilite: null
+ *         prix_devis: 125.50
+ *         rapport: null
+ *         devis_valide: false
+ *         demande_cloturee: false
+ *         client_id: 42
  */
 
 // --- Routes de l'API ---
@@ -131,15 +154,84 @@ app.get("/api/demandes", async (req, res) => {
  */
 app.post("/api/demandes", async (req, res) => {
     try {
-        const { number, type, dateDemande } = req.body;
-        const result = await pool.query(
-            "INSERT INTO demandes (number, type, dateDemande) VALUES ($1, $2, $3) RETURNING *",
-            [number, type, dateDemande]
-        );
+        // Only accept type_panne and commentaire for creation
+        const { id, type_panne, commentaire } = req.body;
+        if (!type_panne) return res.status(400).json({ error: 'type_panne is required' });
+
+        if (id) {
+            // insert with provided UUID
+            const result = await pool.query(
+                `INSERT INTO demandes (id, type_panne, commentaire, date_demande) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`,
+                [id, type_panne, commentaire || null]
+            );
+            res.json(result.rows[0]);
+        } else {
+            const result = await pool.query(
+                `INSERT INTO demandes (type_panne, commentaire, date_demande) VALUES ($1, $2, CURRENT_DATE) RETURNING *`,
+                [type_panne, commentaire || null]
+            );
+            res.json(result.rows[0]);
+        }
         res.json(result.rows[0]);
     } catch (err) {
         console.error('Erreur lors de la création de la demande :', err);
         res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Get single demande by id
+app.get('/api/demandes/:id', async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    try {
+        const result = await pool.query('SELECT * FROM demandes WHERE id = $1', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
+        return res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Erreur lors de la récupération de la demande :', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Patch partial update by id (update per field)
+app.patch('/api/demandes/:id', async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+
+    const allowed = [
+        'panne_id','type_panne','commentaire','date_demande','date_inspection','date_intervention',
+        'date_disponibilite','prix_devis','rapport','devis_valide','demande_cloturee','client_id'
+    ];
+
+    const keys = Object.keys(req.body).filter(k => allowed.includes(k));
+    if (keys.length === 0) return res.status(400).json({ error: 'No valid fields to update' });
+
+    const setClauses = keys.map((k, i) => `${k} = $${i+1}`).join(', ');
+    const values = keys.map(k => req.body[k]);
+    values.push(id);
+
+    const query = `UPDATE demandes SET ${setClauses} WHERE id = $${keys.length + 1} RETURNING *`;
+    try {
+        const result = await pool.query(query, values);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
+        return res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Erreur lors de la mise à jour de la demande :', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Delete demande by id
+app.delete('/api/demandes/:id', async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    try {
+        const result = await pool.query('DELETE FROM demandes WHERE id = $1 RETURNING *', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
+        return res.json({ message: 'Demande deleted', deleted: result.rows[0] });
+    } catch (err) {
+        console.error('Erreur lors de la suppression de la demande :', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
