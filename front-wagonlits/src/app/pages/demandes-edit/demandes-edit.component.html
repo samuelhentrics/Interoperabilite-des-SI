@@ -1,0 +1,174 @@
+<div class="container my-3 demande-page">
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 tabs-card">
+  <ul class="nav nav-pills flex-wrap gap-1">
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab() === 'info'" (click)="setTab('info')">Info</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab() === 'inspection'" (click)="setTab('inspection')">Inspection</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab() === 'devis'" (click)="setTab('devis')">Devis</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab() === 'intervention'" (click)="setTab('intervention')">Intervention</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" [class.active]="activeTab() === 'rapport'" (click)="setTab('rapport')">Rapport</button>
+    </li>
+  </ul>
+
+  <button class="btn btn-outline-danger" (click)="deleteDemande()" [disabled]="isDeleting()">
+    <span *ngIf="!isDeleting()">Supprimer</span>
+    <span *ngIf="isDeleting()">Suppression…</span>
+  </button>
+</div>
+
+
+  <!-- INFO -->
+  <div *ngIf="activeTab() === 'info'">
+    <form [formGroup]="infoForm">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <label class="form-label">Numéro</label>
+            <input class="form-control" formControlName="numero">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Type</label>
+            <input class="form-control" formControlName="type">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Commentaire</label>
+            <textarea class="form-control big-textarea" formControlName="commentaire"></textarea>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- INSPECTION -->
+  <div *ngIf="activeTab() === 'inspection'">
+    <form [formGroup]="inspectionForm">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <label class="form-label">Numéro</label>
+            <input class="form-control" formControlName="numero">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Date inspection</label>
+            <input type="date" class="form-control" formControlName="dateInspection">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Pièces à changer</label>
+            <input class="form-control" formControlName="piecesAChanger" placeholder="Liste, références…">
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="mb-3 h-100 d-flex flex-column">
+            <label class="form-label">Commentaire</label>
+            <textarea class="form-control big-textarea flex-grow-1" formControlName="commentaire"></textarea>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- DEVIS -->
+  <div *ngIf="activeTab() === 'devis'">
+    <form [formGroup]="devisForm">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <label class="form-label">Numéro</label>
+            <input class="form-control" formControlName="numero">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Prix pièce</label>
+            <input type="number" min="0" step="0.01" class="form-control" formControlName="prixPiece">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Prix horaire</label>
+            <input type="number" min="0" step="0.01" class="form-control" formControlName="prixHoraire">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Prix total</label>
+            <input type="number" class="form-control" formControlName="prixTotal">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- INTERVENTION -->
+  <div *ngIf="activeTab() === 'intervention'">
+    <form [formGroup]="interventionForm">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <label class="form-label">Numéro</label>
+            <input class="form-control" formControlName="numero">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Date intervention</label>
+            <input type="date" class="form-control" formControlName="dateIntervention">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Temps théorique</label>
+            <input class="form-control" formControlName="tempsTheorique" placeholder="ex: 3h30">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Temps réel</label>
+            <input class="form-control" formControlName="tempsReel" placeholder="ex: 4h05">
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+          <div class="mb-3 h-100 d-flex flex-column">
+            <label class="form-label">Commentaire</label>
+            <textarea class="form-control big-textarea flex-grow-1" formControlName="commentaire"></textarea>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- RAPPORT -->
+  <div *ngIf="activeTab() === 'rapport'">
+    <form [formGroup]="rapportForm">
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <div class="mb-3">
+            <label class="form-label">Numéro</label>
+            <input class="form-control" formControlName="numero">
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="finInterv" formControlName="finIntervention">
+            <label class="form-check-label" for="finInterv">Fin d'intervention</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Commentaire final</label>
+            <textarea class="form-control big-textarea" formControlName="commentaireFinal"></textarea>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="d-flex justify-content-end mt-4">
+    <button class="btn btn-success" (click)="fermerDemande()">Fermer la demande</button>
+  </div>
+</div>
