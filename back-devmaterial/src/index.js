@@ -165,7 +165,7 @@ async function subscribeToWebhook() {
     }
 
     try {
-        const who = process.env.WEBHOOK_WHO || 'back-devmaterial';
+        const who = process.env.WEBHOOK_WHO || 'erp-devmaterial';
         console.log(`➡️ Subscribing to webhook at ${subscribeUrl} as '${who}' with callback ${callbackUrl}`);
         const response = await fetch(subscribeUrl, {
             method: 'POST',
@@ -192,6 +192,6 @@ app.listen(port, async () => {
     setTimeout(async () => {
         console.log('⏳ Tentative de connexion au webhook...');
         await subscribeToWebhook();
-    }, 2000);
+    }, 10000);
 
 });

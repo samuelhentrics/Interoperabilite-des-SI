@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
+import cors from 'cors';
 
 type Event = {
     event: string,
@@ -13,6 +14,14 @@ type Event = {
 
 const app = express();
 app.use(bodyParser.json());
+app.use(cors());
+
+app.use(cors({
+  origin: ['http://localhost:4200', 'http://localhost:4201'],
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'X-Signature'],
+  optionsSuccessStatus: 204,
+}));
 
 type Subscriber = { who: string; url: string };
 let subscribers: Subscriber[] = [];
