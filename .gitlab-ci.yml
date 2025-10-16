@@ -1,5 +1,6 @@
 stages:
   - build
+  - security
 
 build:
   image: node:20
@@ -25,3 +26,10 @@ build:
 include:
   - template: Security/SAST.gitlab-ci.yml
 
+sast:
+  stage: security
+  needs: ["build"]
+  variables:
+    SAST_EXCLUDED_PATHS: "node_modules,dist"
+    SAST_ANALYZER_IMAGE_TAG: "latest"
+  allow_failure: false
