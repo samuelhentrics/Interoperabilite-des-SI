@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
-import { Commande, CommandesService } from '../../services/commandes.services';
+import { Demande, DemandesService } from '../../services/demandes.services';
 
 @Component({
   selector: 'app-demandes-listing',
@@ -13,20 +13,18 @@ import { Commande, CommandesService } from '../../services/commandes.services';
 })
 export class DemandesListingComponent implements OnInit {
 
-  commandes: Commande[] = [];
+  demandes: Demande[] = [];
   isTriggering = false;
   triggerResult: any = null;
-
-  constructor(
-    private commandesService: CommandesService,
-    private http: HttpClient
-  ) {}
+  constructor(private http: HttpClient, private demandesService: DemandesService) {}
 
   ngOnInit(): void {
-    this.commandesService.getCommandes().subscribe({
-      next: (data) => this.commandes = data,
-      error: (err) => console.error('Erreur lors du chargement des commandes :', err)
+    this.demandesService.getDemandes().subscribe({
+      next: (data) => this.demandes = data,
+      error: (err) => console.error('Erreur lors du chargement des demandes :', err)
     });
+
+    
   }
 
   triggerWebhook(): void {

@@ -1,19 +1,7 @@
 <div class="container my-3">
-  <div class="d-flex align-items-center justify-content-between">
-    <h3>Liste des demandes de Wagon Lits</h3>
+  <h3>Liste des demandes de Wagon Lits</h3>
 
-    <button class="btn btn-primary"
-            (click)="triggerWebhook()"
-            [disabled]="isTriggering">
-      {{ isTriggering ? 'Envoi...' : 'Trigger event (webhook)' }}
-    </button>
-  </div>
-  
   <a routerLink="/demandes/add" class="btn btn-primary mb-3">Ajouter une demande</a>
-
-  <div *ngIf="triggerResult" class="alert alert-secondary my-3" style="white-space: pre-wrap;">
-    {{ triggerResult | json }}
-  </div>
 
   <div class="table-responsive">
     <table class="table table-striped table-bordered">
@@ -26,14 +14,14 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let c of commandes">
-          <th scope="row">{{ c.id }}</th>
-          <td>{{ c.number }}</td>
-          <td>{{ c.type }}</td>
-          <td>{{ c.dateDemande | date:'yyyy-MM-dd' }}</td>
+        <tr *ngFor="let d of demandes">
+          <th scope="row">{{ d.id }}</th>
+          <td>{{ d.fault_id || '-' }}</td>
+          <td>{{ d.fault_type }}</td>
+          <td>{{ d.request_date | date:'yyyy-MM-dd' }}</td>
         </tr>
-        <tr *ngIf="commandes.length === 0">
-          <td colspan="4" class="text-center text-muted">Aucune commande trouvée</td>
+        <tr *ngIf="demandes.length === 0">
+          <td colspan="4" class="text-center text-muted">Aucune demande trouvée</td>
         </tr>
       </tbody>
     </table>
