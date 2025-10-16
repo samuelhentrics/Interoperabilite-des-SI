@@ -98,7 +98,6 @@ app.post('/trigger-event', async (req: Request, res: Response) => {
         return res.status(200).send({ message: 'No recipients specified; nothing sent' });
     }
 
-    // Find subscribers matching any of the requested 'who'
     const targets = subscribers.filter(s => who.includes(s.who));
 
     if (targets.length === 0) {
@@ -134,6 +133,8 @@ app.post('/trigger-event', async (req: Request, res: Response) => {
 
     return res.status(200).send({ message: 'Event processed', results });
 });
+
+// FOR ADD A NEW DEMANDE
 
 const PORT = 3000;
 app.listen(PORT, () => {
