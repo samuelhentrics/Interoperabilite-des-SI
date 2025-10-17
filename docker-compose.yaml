@@ -12,13 +12,14 @@ services:
       - webhook_db_data:/var/lib/postgresql/data
     ports:
       - "5430:5432"
+
   webhook-service:
-      build: ./webhook
-      container_name: webhook-service
-      ports:
-        - "3008:3000"
-      depends_on:
-        - webhook-db
+    build: ./webhook
+    container_name: webhook-service
+    ports:
+      - "3008:3000"
+    depends_on:
+      - webhook-db
 
   pgadmin:
     image: dpage/pgadmin4:7.7
@@ -118,17 +119,22 @@ services:
     image: grafana/grafana:11.2.0
     container_name: grafana
     ports:
-      - "3030:3000"              # Grafana UI on http://localhost:3030
+      - "3030:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_SERVER_ROOT_URL=http://localhost:3030
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/suivi-webhook.json
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_USERS_AUTO_LOGIN=true
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
-      - db-devmaterial
+      - webhook-db
 
 volumes:
   webhook_db_data:
