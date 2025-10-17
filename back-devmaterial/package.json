@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "test": "jest --detectOpenHandles --forceExit"
+    "test": "NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --detectOpenHandles --forceExit"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -18,5 +18,9 @@
   "devDependencies": {
     "jest": "^29.7.0",
     "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {}
   }
 }
