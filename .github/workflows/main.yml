@@ -63,7 +63,8 @@ jobs:
     needs: [security]
     strategy:
       matrix:
-        project: [webhook, back-devmaterial, front-devmaterial, back-wagonlits, front-wagonlits]
+        project: [back-devmaterial]
+        #project: [webhook, back-devmaterial, front-devmaterial, back-wagonlits, front-wagonlits]
     defaults:
       run:
         working-directory: ./${{ matrix.project }}
