@@ -108,23 +108,38 @@ app.post('/unsubscribe', async (req: Request, res: Response) => {
 });
 
 app.post('/trigger-event', async (req: Request, res: Response) => {
-    const { from, event, body, who } = req.body as { from?: string; event?: string; body?: any; who?: string[] };
+    const { from, event, body } = req.body || {};
+    try {
+        const result = await sendWebhook(from, event, body);
+        return res.status(200).send(result);
+    } catch (err: any) {
+        console.error('Error triggering webhook:', err);
+        return res.status(500).send({ error: 'Internal server error', details: err && err.message ? err.message : String(err) });
+    }
+});
 
+// Top-level reusable function to send a webhook to all subscribers (excluding sender)
+async function sendWebhook(from: string, event: string, body: any) {
     if (!from || typeof from !== 'string') {
-        return res.status(400).send({ error: 'Field "from" (string) is required' });
+        throw new Error('Field "from" (string) is required');
     }
     if (!event || typeof event !== 'string') {
-        return res.status(400).send({ error: 'Field "event" (string) is required' });
+        throw new Error('Field "event" (string) is required');
     }
 
-    // Build event payload; include sender identity
-    const payload = {
-        event,
-        from,
-        body: body || null
-    };
-
+    const payload = { event, from, body: body || null };
     console.log('Triggering webhook...');
+
+    // fetch all distinct users
+    let allUsers: string[] = [];
+    try {
+        const usersRes = await dbQuery('SELECT DISTINCT who FROM subscribers');
+        allUsers = usersRes.rows.map((r: any) => r.who);
+    } catch (err: any) {
+        console.error('DB error fetching all users', err);
+        throw err;
+    }
+
     // Persist event
     let eventRow: any;
     try {
@@ -132,33 +147,31 @@ app.post('/trigger-event', async (req: Request, res: Response) => {
         eventRow = ev.rows[0];
     } catch (err: any) {
         console.error('DB error inserting event', err);
-        return res.status(500).send({ error: 'Internal server error' });
+        throw err;
     }
 
     const hmacSignature = generateHmac(payload);
+    const targetWho = allUsers.filter(u => u !== from);
 
-    // If who is not provided or empty array -> send to nobody (per spec)
-    if (!who || !Array.isArray(who) || who.length === 0) {
-        // Update event status to no_recipients
-        await dbQuery('UPDATE events SET status = $1 WHERE id = $2', ['no_recipients', eventRow.id]);
-        return res.status(200).send({ message: 'No recipients specified; nothing sent' });
+    if (targetWho.length === 0) {
+        await dbQuery('UPDATE events SET status = $1 WHERE id = $2', ['no_matching_subscribers', eventRow.id]);
+        return { message: 'No matching subscribers found', results: [] };
     }
 
-    // Select matching subscribers from DB
-    let targetsRes;
+    // Select matching subscribers
+    let targetsRes: any;
     try {
-        const placeholders = who.map((_, i) => `$${i + 1}`).join(',');
-        targetsRes = await dbQuery(`SELECT * FROM subscribers WHERE who IN (${placeholders})`, who as any[]);
+        const placeholders = targetWho.map((_, i) => `$${i + 1}`).join(',');
+        targetsRes = await dbQuery(`SELECT * FROM subscribers WHERE who IN (${placeholders})`, targetWho as any[]);
     } catch (err: any) {
         console.error('DB error selecting targets', err);
-        return res.status(500).send({ error: 'Internal server error' });
+        throw err;
     }
 
     const targets = targetsRes.rows as Array<{ id: string; who: string; url: string }>;
-
     if (targets.length === 0) {
         await dbQuery('UPDATE events SET status = $1 WHERE id = $2', ['no_matching_subscribers', eventRow.id]);
-        return res.status(200).send({ message: 'No matching subscribers found' });
+        return { message: 'No matching subscribers found', results: [] };
     }
 
     const results: { who: string; url: string; ok: boolean; status?: number; error?: string }[] = [];
@@ -174,14 +187,12 @@ app.post('/trigger-event', async (req: Request, res: Response) => {
                 body: JSON.stringify(payload)
             });
 
+            const text = await r.text().catch(() => '');
             if (r.ok) {
                 console.log(`Notification sent to ${t.who} -> ${t.url}`);
                 results.push({ who: t.who, url: t.url, ok: true, status: r.status });
-                // Persist result
-                const text = await r.text().catch(() => '');
                 await dbQuery('INSERT INTO event_results (event_id, subscriber_id, status, response) VALUES ($1, $2, $3, $4)', [eventRow.id, t.id, 'ok', text]);
             } else {
-                const text = await r.text().catch(() => '<no body>');
                 console.error(`Failed to send notification to ${t.who} -> ${t.url}: ${text}`);
                 results.push({ who: t.who, url: t.url, ok: false, status: r.status, error: text });
                 await dbQuery('INSERT INTO event_results (event_id, subscriber_id, status, response) VALUES ($1, $2, $3, $4)', [eventRow.id, t.id, 'failed', text]);
@@ -193,7 +204,6 @@ app.post('/trigger-event', async (req: Request, res: Response) => {
         }
     }));
 
-    // Update event status to done
     console.log('All notifications processed for event', eventRow.id);
     try {
         await dbQuery('UPDATE events SET status = $1 WHERE id = $2', ['done', eventRow.id]);
@@ -201,10 +211,79 @@ app.post('/trigger-event', async (req: Request, res: Response) => {
         console.error('DB error updating event status', err);
     }
 
-    return res.status(200).send({ message: 'Event processed', results });
-});
+    return { message: 'Event processed', results };
+}
 
 // FOR ADD A NEW DEMANDE
+// api/demandes l'idée est de recevoir le message puis de le webhooker à tous les abonnés
+
+app.post('/api/demandes', async (req, res) => {
+    const { message } = req.body;
+
+    const from = req.body.from;
+    const body = req.body.body;
+    const event = 'add-demande';
+
+    if (!message) {
+        return res.status(400).send({ error: 'Message is required' });
+    }
+
+    // Webhook the message to all subscribers
+    try {
+        await sendWebhook(from, event, body);
+    } catch (err: any) {
+        console.error('Error sending webhook notifications', err);
+        return res.status(500).send({ error: 'Internal server error' });
+    }
+
+    return res.status(200).send({ message: 'Webhook notifications sent' });
+});
+
+// idem pour le put
+app.put('/api/demandes/:id', async (req, res) => {
+    const { message } = req.body;
+
+    const from = req.body.from;
+    const body = req.body.body;
+    const event = 'update-demande';
+
+    if (!message) {
+        return res.status(400).send({ error: 'Message is required' });
+    }
+
+    // Webhook the message to all subscribers
+    try {
+        await sendWebhook(from, event, body);
+    } catch (err: any) {
+        console.error('Error sending webhook notifications', err);
+        return res.status(500).send({ error: 'Internal server error' });
+    }
+
+    return res.status(200).send({ message: 'Webhook notifications sent' });
+});
+
+// delete 
+app.delete('/api/demandes/:id', async (req, res) => {
+    const { message } = req.body;
+    
+    const from = req.body.from;
+    const body = req.body.body;
+    const event = 'delete-demande';
+
+    if (!message) {
+        return res.status(400).send({ error: 'Message is required' });
+    }
+
+    // Webhook the message to all subscribers
+    try {
+        await sendWebhook(from, event, body);
+    } catch (err: any) {
+        console.error('Error sending webhook notifications', err);
+        return res.status(500).send({ error: 'Internal server error' });
+    }
+
+    return res.status(200).send({ message: 'Webhook notifications sent' });
+});
 
 const PORT = 3000;
 
