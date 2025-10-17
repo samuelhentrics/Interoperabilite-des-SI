@@ -142,69 +142,13 @@ app.get("/api/demandes", async (req, res) => {
  */
 app.post('/api/demandes', async (req, res) => {
     try {
-        const id = req.body.id; // accept UUID
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const demandeType = req.body.type;
-        const commentaire = req.body.commentaire;
-        const client_name = req.body.client_name;
+        await createDemande(req.body);
 
-
-        // Validate required fields per your request
-        if (!commentaire) return res.status(400).json({ error: 'commentaire is required' });
-        if (!demandeType) return res.status(400).json({ error: 'type is required' });
-        if (!client_name) return res.status(400).json({ error: 'client_name is required' });
-
-        // Verify client exists
-        const cCheck = await pool.query('SELECT id, nom FROM client WHERE nom = $1', [client_name]);
-        if (cCheck.rows.length === 0) return res.status(400).json({ error: 'client_name not found' });
-
-        // Use transaction to create demande and initial related rows
-        const clientNom = cCheck.rows[0].nom;
-        const clientIdFinal = cCheck.rows[0].id;
-        const conn = await pool.connect();
-        try {
-            await conn.query('BEGIN');
-            const insertDemandeQuery = id
-                ? `INSERT INTO demandes (id, code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`
-                : `INSERT INTO demandes (code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`;
-            const insertDemandeParams = id
-                ? [id, code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal]
-                : [code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal];
-
-            const rDem = await conn.query(insertDemandeQuery, insertDemandeParams);
-            const demandeRow = rDem.rows[0];
-
-            // Create initial inspection (empty)
-            const rInsp = await conn.query('INSERT INTO inspection (demande_id) VALUES ($1) RETURNING *', [demandeRow.id]);
-
-            // Inserer intervention
-            const rInterv = await conn.query('INSERT INTO intervention (demande_id, lieu, tempsReel, date) VALUES ($1, NULL, NULL, NULL) RETURNING *', [demandeRow.id]);
-
-            // Create initial rapport (empty)
-            const rRap = await conn.query('INSERT INTO rapport (demande_id, finIntervention, commentaire) VALUES ($1, false, NULL) RETURNING *', [demandeRow.id]);
-
-            // Create initial devis with zeroed prices and zero interval
-            const rDevis = await conn.query('INSERT INTO devis (prixDePiece, prixHoraire, tempsEstime, demande_id) VALUES ($1,$2,$3,$4) RETURNING *', [0, 0, 0, demandeRow.id]);
-
-            await conn.query('COMMIT');
-
-            // attach client name for convenience
-            demandeRow.client_name = clientNom;
-
-
-            let structuredResponse = demandeRow;
-            structuredResponse.inspection = rInsp.rows[0];
-            structuredResponse.rapport = rRap.rows[0];
-            structuredResponse.devis = rDevis.rows[0];
-            structuredResponse.intervention = rInterv.rows[0];
-
-            return res.json(structuredResponse);
-        } catch (errInner) {
-            await conn.query('ROLLBACK');
-            console.error('Transaction failed:', errInner);
-            return res.status(500).json({ error: 'Erreur transaction' });
-        } finally {
-            conn.release();
+        try{
+            await publishToWebhookPost(process.env.WEBHOOK_POST_URL + "/api/demandes", req.body);
+        }
+        catch (err) {
+            console.error('Erreur lors de l\'envoi du webhook :', err);
         }
     } catch (err) {
         console.error('Erreur lors de la création de la demande :', err);
@@ -429,6 +373,77 @@ app.delete('/api/demandes/:id', async (req, res) => {
     }
 });
 
+async function createDemande(data) {
+    try {
+        const id = data.id; // accept UUID
+        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const demandeType = data.type;
+        const commentaire = data.commentaire;
+        const client_name = data.client_name;
+
+
+        // Validate required fields per your request
+        if (!commentaire) throw new Error('commentaire is required');
+        if (!demandeType) throw new Error('type is required');
+        if (!client_name) throw new Error('client_name is required');
+
+        // Verify client exists
+        const cCheck = await pool.query('SELECT id, nom FROM client WHERE nom = $1', [client_name]);
+        if (cCheck.rows.length === 0) throw new Error('client_name not found');
+
+        // Use transaction to create demande and initial related rows
+        const clientNom = cCheck.rows[0].nom;
+        const clientIdFinal = cCheck.rows[0].id;
+        const conn = await pool.connect();
+        try {
+            await conn.query('BEGIN');
+            const insertDemandeQuery = id
+                ? `INSERT INTO demandes (id, code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`
+                : `INSERT INTO demandes (code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`;
+            const insertDemandeParams = id
+                ? [id, code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal]
+                : [code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal];
+
+            const rDem = await conn.query(insertDemandeQuery, insertDemandeParams);
+            const demandeRow = rDem.rows[0];
+
+            // Create initial inspection (empty)
+            const rInsp = await conn.query('INSERT INTO inspection (demande_id) VALUES ($1) RETURNING *', [demandeRow.id]);
+
+            // Inserer intervention
+            const rInterv = await conn.query('INSERT INTO intervention (demande_id, lieu, tempsReel, date) VALUES ($1, NULL, NULL, NULL) RETURNING *', [demandeRow.id]);
+
+            // Create initial rapport (empty)
+            const rRap = await conn.query('INSERT INTO rapport (demande_id, finIntervention, commentaire) VALUES ($1, false, NULL) RETURNING *', [demandeRow.id]);
+
+            // Create initial devis with zeroed prices and zero interval
+            const rDevis = await conn.query('INSERT INTO devis (prixDePiece, prixHoraire, tempsEstime, demande_id) VALUES ($1,$2,$3,$4) RETURNING *', [0, 0, 0, demandeRow.id]);
+
+            await conn.query('COMMIT');
+
+            // attach client name for convenience
+            demandeRow.client_name = clientNom;
+
+
+            let structuredResponse = demandeRow;
+            structuredResponse.inspection = rInsp.rows[0];
+            structuredResponse.rapport = rRap.rows[0];
+            structuredResponse.devis = rDevis.rows[0];
+            structuredResponse.intervention = rInterv.rows[0];
+
+            return res.json(structuredResponse);
+        } catch (errInner) {
+            await conn.query('ROLLBACK');
+            throw errInner;
+        } finally {
+            conn.release();
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+
 // --- webhook ---
 app.post("/webhook", (req, res) => {
     const signature = req.headers["x-signature"];
@@ -439,6 +454,61 @@ app.post("/webhook", (req, res) => {
 
     res.status(200).send({ message: "Event received" });
 });
+
+async function publishToWebhookPost(url, data) {
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const text = await response.text().catch(() => '<no body>');
+            throw new Error(`HTTP ${response.status} - ${text}`);
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+
+
+
+
+async function publishToWebhookPut(url, data) {
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const text = await response.text().catch(() => '<no body>');
+            throw new Error(`HTTP ${response.status} - ${text}`);
+        }
+    }
+    catch (err) {
+        throw err;
+    }
+}
+
+async function publishToWebhookDelete(url, data) {
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            const text = await response.text().catch(() => '<no body>');
+            throw new Error(`HTTP ${response.status} - ${text}`);
+        }
+    }
+    catch (err) {
+        throw err;
+    }
+}
+
 
 
 async function subscribeToWebhook() {
