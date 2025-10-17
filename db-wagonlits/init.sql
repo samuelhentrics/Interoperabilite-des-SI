@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS devis (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   priceComponent  NUMERIC(10,2),
   priceHour NUMERIC(10,2),
-  estimatedTime INTERVAL,
+  estimatedTime INTEGER,
   demande_id UUID NOT NULL,
   CONSTRAINT fk_devis_demande
     FOREIGN KEY (demande_id)
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS intervention (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   interventionDate DATE,
   localisation VARCHAR(255),
-  realTime INTERVAL,   -- durée réelle (ex: '12 hours 30 minutes')
+  realTime INTEGER,   -- durée réelle (ex: '12 hours 30 minutes')
   comment TEXT,
   demande_id UUID NOT NULL,
   CONSTRAINT fk_intervention_demande

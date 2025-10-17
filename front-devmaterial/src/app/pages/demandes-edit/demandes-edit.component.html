@@ -42,10 +42,6 @@
     <!-- edit demande JSON directly -->
     <div class="row g-3">
       <div class="col-12 col-lg-6">
-        <div class="mb-3">
-          <label class="form-label">Numéro</label>
-          <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-info">
-        </div>
 
         <div class="mb-3">
           <label class="form-label">Type</label>
@@ -69,26 +65,22 @@
 <div *ngIf="activeTab === 'inspection'">
   <div class="row g-3">
     <div class="col-12 col-lg-6">
-      <div class="mb-3">
-        <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-inspection">
-      </div>
 
-      <div class="mb-3">
-        <label class="form-label">Date inspection</label>
-  <input type="date" class="form-control" [(ngModel)]="demande.dateInspection" [ngModelOptions]="{standalone: true}" name="dateInspection">
-      </div>
+  <div class="mb-3">
+    <label class="form-label">Date inspection</label>
+  <input type="date" class="form-control" [(ngModel)]="demande.inspection.date" [ngModelOptions]="{standalone: true}" name="dateInspection">
+  </div>
 
       <div class="mb-3">
         <label class="form-label">Pièces à changer</label>
-        <input class="form-control" [(ngModel)]="demande.piecesAChanger" [ngModelOptions]="{standalone: true}" name="piecesAChanger"
+        <input class="form-control" [(ngModel)]="demande.inspection.piecedefectueuse" [ngModelOptions]="{standalone: true}" name="piecesAChanger"
           placeholder="Liste, références…">
       </div>
     </div>
     <div class="col-12 col-lg-6">
       <div class="mb-3 h-100 d-flex flex-column">
         <label class="form-label">Commentaire</label>
-        <textarea class="form-control big-textarea flex-grow-1" [(ngModel)]="demande.commentaire" [ngModelOptions]="{standalone: true}"
+        <textarea class="form-control big-textarea flex-grow-1" [(ngModel)]="demande.inspection.commentaire" [ngModelOptions]="{standalone: true}"
           name="commentaire-inspection"></textarea>
       </div>
     </div>
@@ -102,25 +94,21 @@
 <div *ngIf="activeTab === 'devis'">
   <div class="row g-3">
     <div class="col-12 col-lg-6">
-      <div class="mb-3">
-        <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-devis">
-      </div>
 
       <div class="mb-3">
         <label class="form-label">Prix pièce</label>
-  <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="demande.prixPiece" [ngModelOptions]="{standalone: true}" name="prixPiece">
+  <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="currentDevis.prixdepiece" [ngModelOptions]="{standalone: true}" name="prixPiece">
       </div>
 
       <div class="mb-3">
         <label class="form-label">Prix horaire</label>
-        <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="demande.prixHoraire" [ngModelOptions]="{standalone: true}"
+        <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="currentDevis.prixhoraire" [ngModelOptions]="{standalone: true}"
           name="prixHoraire">
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Prix total</label>
-  <input type="number" class="form-control" [(ngModel)]="demande.prixTotal" [ngModelOptions]="{standalone: true}" name="prixTotal">
+        <label class="form-label">Temps estimé</label>
+  <input type="number" class="form-control" [(ngModel)]="currentDevis.tempsestime" [ngModelOptions]="{standalone: true}" name="tempsEstime">
       </div>
     </div>
   </div>
@@ -133,31 +121,28 @@
 <div *ngIf="activeTab === 'intervention'">
   <div class="row g-3">
     <div class="col-12 col-lg-6">
-      <div class="mb-3">
-        <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-intervention">
-      </div>
+      
 
-      <div class="mb-3">
-        <label class="form-label">Date intervention</label>
-  <input type="date" class="form-control" [(ngModel)]="demande.dateIntervention" [ngModelOptions]="{standalone: true}" name="dateIntervention">
-      </div>
+  <div class="mb-3">
+    <label class="form-label">Date intervention</label>
+  <input type="date" class="form-control" [(ngModel)]="currentIntervention.date" [ngModelOptions]="{standalone: true}" name="dateIntervention">
+  </div>
 
-      <div class="mb-3">
-        <label class="form-label">Temps théorique</label>
-  <input class="form-control" [(ngModel)]="demande.tempsTheorique" [ngModelOptions]="{standalone: true}" name="tempsTheorique" placeholder="ex: 3h30">
-      </div>
+  <div class="mb-3">
+    <label class="form-label">Temps théorique</label>
+  <input class="form-control" [(ngModel)]="currentIntervention.tempsTheorique" [ngModelOptions]="{standalone: true}" name="tempsTheorique" placeholder="ex: 3h30">
+  </div>
 
-      <div class="mb-3">
-        <label class="form-label">Temps réel</label>
-  <input class="form-control" [(ngModel)]="demande.tempsReel" [ngModelOptions]="{standalone: true}" name="tempsReel" placeholder="ex: 4h05">
-      </div>
+  <div class="mb-3">
+    <label class="form-label">Temps réel</label>
+  <input class="form-control" [(ngModel)]="currentIntervention.tempsReel" [ngModelOptions]="{standalone: true}" name="tempsReel" placeholder="ex: 4h05">
+  </div>
     </div>
 
     <div class="col-12 col-lg-6">
       <div class="mb-3 h-100 d-flex flex-column">
         <label class="form-label">Commentaire</label>
-        <textarea class="form-control big-textarea flex-grow-1" [(ngModel)]="demande.commentaire" [ngModelOptions]="{standalone: true}"
+        <textarea class="form-control big-textarea flex-grow-1" [(ngModel)]="currentIntervention.commentaire" [ngModelOptions]="{standalone: true}"
           name="commentaire-intervention"></textarea>
       </div>
     </div>
@@ -171,20 +156,16 @@
 <div *ngIf="activeTab === 'rapport'">
   <div class="row g-3">
     <div class="col-12 col-lg-6">
-      <div class="mb-3">
-        <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-rapport">
-      </div>
 
       <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" id="finInterv" [(ngModel)]="demande.finIntervention" [ngModelOptions]="{standalone: true}"
+        <input class="form-check-input" type="checkbox" id="finInterv" [(ngModel)]="demande.rapport.finIntervention" [ngModelOptions]="{standalone: true}"
           name="finIntervention">
         <label class="form-check-label" for="finInterv">Fin d'intervention</label>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Commentaire final</label>
-        <textarea class="form-control big-textarea" [(ngModel)]="demande.commentaireFinal" [ngModelOptions]="{standalone: true}"
+        <textarea class="form-control big-textarea" [(ngModel)]="demande.rapport.commentaireFinal" [ngModelOptions]="{standalone: true}"
           name="commentaireFinal"></textarea>
       </div>
     </div>
