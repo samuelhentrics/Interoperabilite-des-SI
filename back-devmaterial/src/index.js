@@ -331,3 +331,16 @@ app.listen(port, async () => {
     }, 10000);
 
 });
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, async () => {
+    console.log(`✅ Backend running on port ${port}`);
+    console.log(`📄 Documentation API disponible sur http://localhost:${port}/api-docs`);
+    setTimeout(async () => {
+      console.log('⏳ Tentative de connexion au webhook...');
+      await subscribeToWebhook();
+    }, 10000);
+  });
+}
+
+export default app;
