@@ -63,6 +63,36 @@ export class DemandesEditComponent implements OnInit {
 
   demandeId!: string;
 
+  // Provide a stable reference to the first intervention so the template can two-way bind to it.
+  get currentIntervention() {
+    if (!this.demande.interventions || this.demande.interventions.length === 0) {
+      // create a default placeholder object but do not push to real array until save
+      return {
+        id: '',
+        date: null,
+        lieu: null,
+        tempsreel: null,
+        commentaire: null,
+        demande_id: this.demandeId
+      };
+    }
+    return this.demande.interventions[0];
+  }
+
+  get currentDevis() {
+    if (!this.demande.devis || this.demande.devis.length === 0) {
+      // create a default placeholder object but do not push to real array until save
+      return {
+        id: '',
+        prixdepiece: 0,
+        prixhoraire: 0,
+        tempsestime: null,
+        demande_id: this.demandeId
+      };
+    }
+    return this.demande.devis[0];
+  }
+
   ngOnInit(): void {
     // Récupérer l'ID de la demande depuis l'URL
   this.demandeId = this.route.snapshot.paramMap.get('id') || '';
