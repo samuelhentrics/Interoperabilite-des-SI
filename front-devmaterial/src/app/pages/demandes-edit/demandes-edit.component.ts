@@ -57,12 +57,13 @@ export class DemandesEditComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router) { }
 
-  demandeId!: number;
+  demandeId!: string;
 
   ngOnInit(): void {
     // Récupérer l'ID de la demande depuis l'URL
-    this.demandeId = Number(this.route.snapshot.paramMap.get('id'));
+  this.demandeId = this.route.snapshot.paramMap.get('id') || '';
     this.numDemande = this.genNumDemande();
+    this.getDemande();
 
     // Onglet depuis l'URL
     const rawTab = this.route.snapshot.queryParamMap.get('tab');
@@ -78,6 +79,19 @@ export class DemandesEditComponent implements OnInit {
         replaceUrl: true
       });
     }
+  }
+
+  getDemande() {
+    this.http.get(`http://localhost:3000/api/demandes/${this.demandeId}`).subscribe({
+      next: (data: any) => {
+        console.log('Demande data:', data);
+        this.demande = data;
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Erreur lors du chargement de la demande');
+      }
+    });
   }
 
 

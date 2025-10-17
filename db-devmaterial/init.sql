@@ -96,3 +96,7 @@ CREATE TABLE IF NOT EXISTS rapport (
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
+
+
+INSERT INTO client (nom) VALUES ('erp-wagonlits');
+INSERT INTO client (nom) VALUES ('erp-constructwagon');

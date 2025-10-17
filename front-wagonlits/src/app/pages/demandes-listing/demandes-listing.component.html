@@ -23,6 +23,9 @@
           <td>{{ d.fault_id || '-' }}</td>
           <td>{{ d.fault_type }}</td>
           <td>{{ d.request_date | date:'yyyy-MM-dd' }}</td>
+          <td>
+            <a class="btn btn-sm btn-outline-primary" [routerLink]="['/demandes', d.id]">Modifier</a>
+          </td>
         </tr>
         <tr *ngIf="demandes.length === 0">
           <td colspan="4" class="text-center text-muted">Aucune demande trouvée</td>

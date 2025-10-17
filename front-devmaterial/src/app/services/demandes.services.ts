@@ -3,10 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Demande {
-  id: number;
+  id: string; // UUID or string id
   number: string;
   type: string;
   dateDemande: string;
+  client_name: string;
 }
 
 @Injectable({
