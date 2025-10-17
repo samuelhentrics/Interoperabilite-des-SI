@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS demandes (
   state INTEGER,
   createdAt DATE,
   type VARCHAR(255),
-  comment TEXT,
+  comment TEXT
 );
 
 -- =======================
