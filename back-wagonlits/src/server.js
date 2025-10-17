@@ -324,15 +324,17 @@ async function subscribeToWebhook() {
         console.error('⚠️ Impossible de se connecter au webhook :', err && err.message ? err.message : err);
     }
 }
+if (process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID) {
+  app.listen(PORT, () => {
+    console.log(`✅ back-wagonlits on http://0.0.0.0:${PORT}`);
+    console.log(`📄 Swagger UI on http://localhost:${PORT}/api-docs`);
 
-app.listen(PORT, () => {
-  console.log(`✅ back-wagonlits on http://0.0.0.0:${PORT}`);
-  console.log(`📄 Swagger UI on http://localhost:${PORT}/api-docs`);
+    // Connexion au webhook
+      setTimeout(async () => {
+          console.log('⏳ Tentative de connexion au webhook...');
+          await subscribeToWebhook();
+      }, 10000);
 
-  // Connexion au webhook
-    setTimeout(async () => {
-        console.log('⏳ Tentative de connexion au webhook...');
-        await subscribeToWebhook();
-    }, 10000);
-
-});
+  });
+}
+export default app;
