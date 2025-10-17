@@ -218,8 +218,10 @@ async function sendWebhook(from: string, event: string, body: any) {
 // api/demandes l'idée est de recevoir le message puis de le webhooker à tous les abonnés
 
 app.post('/api/demandes', async (req, res) => {
+    console.log('ANALIA')
     const { message } = req.body;
 
+    
     const from = req.body.from;
     const body = req.body.body;
     const event = 'add-demande';
