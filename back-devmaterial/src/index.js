@@ -266,6 +266,156 @@ app.patch('/api/demandes/:id', async (req, res) => {
     }
 });
 
+// Full replace/update of a demande and its related entities
+app.put('/api/demandes/:id', async (req, res) => {
+    const id = req.params.id;
+    const body = req.body || {};
+
+    // Map incoming fields to DB columns
+    const demandeFieldsMap = {
+        code: 'code',
+        statut: 'statut',
+        datecreation: 'dateCreation',
+        dateCreation: 'dateCreation',
+        type: 'type',
+        commentaire: 'commentaire',
+        client_id: 'client_id',
+        clientId: 'client_id'
+    };
+
+    const keys = Object.keys(body).filter(k => Object.keys(demandeFieldsMap).includes(k));
+
+    const conn = await pool.connect();
+    try {
+        await conn.query('BEGIN');
+
+        // Update demandes table if there are top-level demande fields
+        if (keys.length > 0) {
+            const cols = keys.map((k, i) => `${demandeFieldsMap[k]} = $${i + 1}`).join(', ');
+            const vals = keys.map(k => body[k]);
+            vals.push(id);
+            const q = `UPDATE demandes SET ${cols} WHERE id = $${keys.length + 1} RETURNING *`;
+            const up = await conn.query(q, vals);
+            if (up.rows.length === 0) {
+                await conn.query('ROLLBACK');
+                return res.status(404).json({ error: 'Demande not found' });
+            }
+        }
+
+        // Helper to update or insert inspection
+        if (body.inspection) {
+            const insp = body.inspection;
+            // Prefer update by id, fallback to demande_id
+            if (insp.id) {
+                await conn.query(
+                    `UPDATE inspection SET date = $1, piecedefectueuse = $2, commentaire = $3 WHERE id = $4`,
+                    [insp.date || null, insp.piecedefectueuse || null, insp.commentaire || null, insp.id]
+                );
+            } else {
+                // update by demande_id
+                await conn.query(
+                    `UPDATE inspection SET date = $1, piecedefectueuse = $2, commentaire = $3 WHERE demande_id = $4`,
+                    [insp.date || null, insp.piecedefectueuse || null, insp.commentaire || null, id]
+                );
+            }
+        }
+
+        // Helper to update rapport
+        if (body.rapport) {
+            const rap = body.rapport;
+            const fin = rap.finintervention !== undefined ? rap.finintervention : (rap.finIntervention !== undefined ? rap.finIntervention : null);
+            if (rap.id) {
+                await conn.query(
+                    `UPDATE rapport SET finIntervention = $1, commentaire = $2 WHERE id = $3`,
+                    [fin, rap.commentaire || null, rap.id]
+                );
+            } else {
+                await conn.query(
+                    `UPDATE rapport SET finIntervention = $1, commentaire = $2 WHERE demande_id = $3`,
+                    [fin, rap.commentaire || null, id]
+                );
+            }
+        }
+
+        // Helper to update/insert devis
+        if (body.devis) {
+            const handleDevis = async (d) => {
+                const p = d.prixdepiece !== undefined ? d.prixdepiece : (d.prixDePiece !== undefined ? d.prixDePiece : null);
+                const h = d.prixhoraire !== undefined ? d.prixhoraire : (d.prixHoraire !== undefined ? d.prixHoraire : null);
+                const t = d.tempsestime !== undefined ? d.tempsestime : (d.tempsEstime !== undefined ? d.tempsEstime : null);
+                if (d.id) {
+                    await conn.query(`UPDATE devis SET prixDePiece = $1, prixHoraire = $2, tempsEstime = $3 WHERE id = $4`, [p, h, t, d.id]);
+                } else {
+                    // if a row exists for this demande, update first row; otherwise insert
+                    const existing = await conn.query('SELECT id FROM devis WHERE demande_id = $1 LIMIT 1', [id]);
+                    if (existing.rows.length > 0) {
+                        await conn.query(`UPDATE devis SET prixDePiece = $1, prixHoraire = $2, tempsEstime = $3 WHERE id = $4`, [p, h, t, existing.rows[0].id]);
+                    } else {
+                        await conn.query(`INSERT INTO devis (prixDePiece, prixHoraire, tempsEstime, demande_id) VALUES ($1,$2,$3,$4)`, [p || 0, h || 0, t || 0, id]);
+                    }
+                }
+            };
+
+            if (Array.isArray(body.devis)) {
+                for (const d of body.devis) await handleDevis(d);
+            } else {
+                await handleDevis(body.devis);
+            }
+        }
+
+        // Helper to update interventions
+        if (body.interventions || body.intervention) {
+            const items = body.interventions || (body.intervention ? [body.intervention] : []);
+            for (const it of items) {
+                const date = it.date || null;
+                const lieu = it.lieu || it.lieuIntervention || null;
+                const temps = it.tempsreel || it.tempsReel || null;
+                const comm = it.commentaire || null;
+                if (it.id) {
+                    await conn.query(`UPDATE intervention SET date = $1, lieu = $2, tempsReel = $3, commentaire = $4 WHERE id = $5`, [date, lieu, temps, comm, it.id]);
+                } else {
+                    const existing = await conn.query('SELECT id FROM intervention WHERE demande_id = $1 LIMIT 1', [id]);
+                    if (existing.rows.length > 0) {
+                        await conn.query(`UPDATE intervention SET date = $1, lieu = $2, tempsReel = $3, commentaire = $4 WHERE id = $5`, [date, lieu, temps, comm, existing.rows[0].id]);
+                    } else {
+                        await conn.query(`INSERT INTO intervention (date, lieu, tempsReel, commentaire, demande_id) VALUES ($1,$2,$3,$4,$5)`, [date, lieu, temps, comm, id]);
+                    }
+                }
+            }
+        }
+
+        await conn.query('COMMIT');
+
+        // Return fresh data (reuse existing GET logic)
+        const q = `SELECT d.*, c.nom AS client_name
+                   FROM demandes d
+                   LEFT JOIN client c ON d.client_id = c.id
+                   WHERE d.id = $1`;
+        const result = await pool.query(q, [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found after update' });
+        const demande = result.rows[0];
+
+        const devis = (await pool.query('SELECT * FROM devis WHERE demande_id = $1 ORDER BY id', [id])).rows;
+        const interventions = (await pool.query('SELECT * FROM intervention WHERE demande_id = $1 ORDER BY id', [id])).rows;
+        const inspection = (await pool.query('SELECT * FROM inspection WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
+        const rapport = (await pool.query('SELECT * FROM rapport WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
+
+        let structuredResponse = demande;
+        structuredResponse.devis = devis;
+        structuredResponse.interventions = interventions;
+        structuredResponse.inspection = inspection;
+        structuredResponse.rapport = rapport;
+
+        return res.json(structuredResponse);
+    } catch (err) {
+        await conn.query('ROLLBACK').catch(() => {});
+        console.error('Erreur lors de la mise à jour complète de la demande :', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    } finally {
+        conn.release();
+    }
+});
+
 // Delete demande by id
 app.delete('/api/demandes/:id', async (req, res) => {
     const id = req.params.id; // accept UUID
