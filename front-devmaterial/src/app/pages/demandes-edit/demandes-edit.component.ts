@@ -65,8 +65,6 @@ export class DemandesEditComponent implements OnInit {
     this.numDemande = this.genNumDemande();
 
     // Onglet depuis l'URL
-    // charger la demande depuis l'API (XML)
-    this.loadDemande();
     const rawTab = this.route.snapshot.queryParamMap.get('tab');
     const validTabs: TabKey[] = ['info', 'inspection', 'devis', 'intervention', 'rapport'];
     if (rawTab && validTabs.includes(rawTab as TabKey)) {
@@ -84,78 +82,8 @@ export class DemandesEditComponent implements OnInit {
 
 
   saveChange() {
-    // Convert current `demande` object to XML and PUT to backend
-    const xml = this.buildDemandeXml(this.demande);
-    this.http.put(`/api/demandes/${this.demandeId}`, xml, {
-      headers: { 'Content-Type': 'application/xml' },
-      responseType: 'text'
-    }).subscribe({
-      next: (res) => {
-        console.log('saved', res);
-        alert('Enregistré');
-      },
-      error: (err) => {
-        console.error('save error', err);
-        alert('Erreur lors de l\'enregistrement');
-      }
-    });
-  }
-
-  private loadDemande() {
-    this.http.get(`/api/demandes/${this.demandeId}`, { responseType: 'text' }).subscribe({
-      next: (xmlText) => {
-        try {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(xmlText, 'application/xml');
-          // naive parsing: map known nodes to fields
-          const getText = (tag: string) => {
-            const el = doc.getElementsByTagName(tag)[0];
-            return el ? el.textContent || '' : '';
-          };
-
-          this.demande.numero = getText('numero') || this.demande.numero;
-          this.demande.type = getText('type') || this.demande.type;
-          this.demande.commentaire = getText('commentaire') || this.demande.commentaire;
-          this.demande.client_name = getText('client_name') || this.demande.client_name;
-          // dates
-          const di = getText('dateInspection');
-          if (di) this.demande.dateInspection = di;
-          const dint = getText('dateIntervention');
-          if (dint) this.demande.dateIntervention = dint;
-          // numeric
-          const pp = getText('prixPiece');
-          if (pp) this.demande.prixPiece = Number(pp);
-          const ph = getText('prixHoraire');
-          if (ph) this.demande.prixHoraire = Number(ph);
-          const pieces = getText('piecesAChanger');
-          if (pieces) this.demande.piecesAChanger = pieces;
-
-          // set displayed numero
-          this.numDemande = this.demande.numero || this.numDemande;
-        } catch (e) {
-          console.error('XML parse error', e);
-        }
-      },
-      error: (err) => {
-        console.error('Failed loading demande XML', err);
-      }
-    });
-  }
-
-  private buildDemandeXml(d: any): string {
-    // Build a simple XML representation matching backend expectations
-    // Note: keep it simple and escape minimal chars
-    const esc = (v: any) => {
-      if (v == null) return '';
-      return String(v)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-    };
-
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<demande>\n  <numero>${esc(d.numero)}</numero>\n  <type>${esc(d.type)}</type>\n  <client_name>${esc(d.client_name)}</client_name>\n  <commentaire>${esc(d.commentaire)}</commentaire>\n  <piecesAChanger>${esc(d.piecesAChanger)}</piecesAChanger>\n  <prixPiece>${esc(d.prixPiece)}</prixPiece>\n  <prixHoraire>${esc(d.prixHoraire)}</prixHoraire>\n  <dateInspection>${esc(d.dateInspection)}</dateInspection>\n  <dateIntervention>${esc(d.dateIntervention)}</dateIntervention>\n</demande>`;
+    // Placeholder for save logic — for now just log
+    console.log('ok');
   }
 
   setTab(tab: TabKey) {
