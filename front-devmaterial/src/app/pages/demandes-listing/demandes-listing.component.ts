@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
 import { Demande, DemandesService } from '../../services/demandes.services';
 
 @Component({
   selector: 'app-demandes-listing',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule, HttpClientModule, RouterModule],
   templateUrl: './demandes-listing.component.html',
   styleUrls: ['./demandes-listing.component.scss']
 })

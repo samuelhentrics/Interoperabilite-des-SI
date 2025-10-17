@@ -3,10 +3,24 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Demande {
-  id: number;
-  number: string;
-  type: string;
-  dateDemande: string;
+  id: string; // UUID
+  code: string;
+  statut?: string | null;
+  datecreation?: string; // ISO date string
+  type?: string;
+  commentaire?: string | null;
+  client_id?: string;
+  client_name?: string;
+  devis?: Array<{
+    id?: string;
+    prixdepiece?: string;
+    prixhoraire?: string;
+    tempsestime?: any;
+    demande_id?: string;
+  }>;
+  interventions?: Array<any>;
+  inspection?: any;
+  rapport?: any;
 }
 
 @Injectable({

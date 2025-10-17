@@ -23,19 +23,18 @@ export class DemandesEditComponent implements OnInit {
 
   // Données de la demande (utiliser le JSON directement)
   demande: any = {
-    numero: '',
+    id: '',
+    code: '',
+    statut: null,
+    datecreation: null,
     type: '',
-    commentaire: '',
-    dateInspection: null,
-    piecesAChanger: '',
-    prixPiece: 0,
-    prixHoraire: 0,
-    prixTotal: 0,
-    dateIntervention: null,
-    tempsTheorique: '',
-    tempsReel: '',
-    finIntervention: false,
-    commentaireFinal: ''
+    commentaire: null,
+    client_id: null,
+    client_name: null,
+    devis: [],
+    interventions: [],
+    inspection: null,
+    rapport: null
   };
 
   // Calcul total (prix pièce + prix horaire) – simple et modifiable
@@ -43,9 +42,14 @@ export class DemandesEditComponent implements OnInit {
   // Reactive effect to recompute prixTotal when demande prices change.
   // Placed as a field initializer so it's created in an injection context.
   private prixEffect = effect(() => {
-    const piece = Number(this.demande.prixPiece || 0);
-    const horaire = Number(this.demande.prixHoraire || 0);
-    const total = piece + horaire;
+    // compute total from devis array if available
+    const devis = Array.isArray(this.demande.devis) ? this.demande.devis : [];
+    let total = 0;
+    for (const d of devis) {
+      const p = Number(d.prixdepiece || 0);
+      const h = Number(d.prixhoraire || 0);
+      total += p + h;
+    }
     this.prixTotal.set(total);
   });
   prixTotal = signal<number>(0);
@@ -57,12 +61,13 @@ export class DemandesEditComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router) { }
 
-  demandeId!: number;
+  demandeId!: string;
 
   ngOnInit(): void {
     // Récupérer l'ID de la demande depuis l'URL
-    this.demandeId = Number(this.route.snapshot.paramMap.get('id'));
+  this.demandeId = this.route.snapshot.paramMap.get('id') || '';
     this.numDemande = this.genNumDemande();
+    this.getDemande();
 
     // Onglet depuis l'URL
     const rawTab = this.route.snapshot.queryParamMap.get('tab');
@@ -80,10 +85,47 @@ export class DemandesEditComponent implements OnInit {
     }
   }
 
+  getDemande() {
+    this.http.get(`http://localhost:3000/api/demandes/${this.demandeId}`).subscribe({
+      next: (data: any) => {
+        console.log('Demande data:', data);
+        // normalize the backend shape if necessary
+        this.demande = {
+          id: data.id,
+          code: data.code || data.numero || '',
+          statut: data.statut ?? null,
+          datecreation: data.datecreation || data.dateDemande || null,
+          type: data.type || '',
+          commentaire: data.commentaire ?? null,
+          client_id: data.client_id || null,
+          client_name: data.client_name || (data.client ? data.client.nom : null),
+          devis: data.devis || [],
+          interventions: data.interventions || [],
+          inspection: data.inspection || null,
+          rapport: data.rapport || null
+        };
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Erreur lors du chargement de la demande');
+      }
+    });
+  }
+
 
   saveChange() {
-    // Placeholder for save logic — for now just log
-    console.log('ok');
+    // Send the normalized JSON back to the backend with PUT
+    const payload = { ...this.demande };
+    this.http.put(`http://localhost:3000/api/demandes/${this.demandeId}`, payload).subscribe({
+      next: (res) => {
+        console.log('Save successful', res);
+        alert('Enregistré');
+      },
+      error: (err) => {
+        console.error('Save error', err);
+        alert('Erreur lors de l\'enregistrement');
+      }
+    });
   }
 
   setTab(tab: TabKey) {

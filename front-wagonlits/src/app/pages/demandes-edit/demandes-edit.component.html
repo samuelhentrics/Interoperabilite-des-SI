@@ -54,12 +54,12 @@
         <div class="mb-3">
           <label class="form-label">Commentaire</label>
           <textarea class="form-control big-textarea" [(ngModel)]="demande.commentaire" [ngModelOptions]="{standalone: true}"
-            name="commentaire-info"></textarea>
+            name="commentaire-info" disabled></textarea>
         </div>
       </div>
     </div>
     <div class="d-flex justify-content-end mt-3">
-      <button class="btn btn-primary" (click)="saveChange()">Enregistrer</button>
+      <button class="btn btn-primary" (click)="saveChange()" disabled>Enregistrer</button>
     </div>
   </div>
 </div>
@@ -70,30 +70,30 @@
     <div class="col-12 col-lg-6">
       <div class="mb-3">
         <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-inspection">
+        <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-inspection" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Date inspection</label>
-  <input type="date" class="form-control" [(ngModel)]="demande.dateInspection" [ngModelOptions]="{standalone: true}" name="dateInspection">
+        <input type="date" class="form-control" [(ngModel)]="demande.dateInspection" [ngModelOptions]="{standalone: true}" name="dateInspection" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Pièces à changer</label>
-        <input class="form-control" [(ngModel)]="demande.piecesAChanger" [ngModelOptions]="{standalone: true}" name="piecesAChanger"
-          placeholder="Liste, références…">
+          <input class="form-control" [(ngModel)]="demande.piecesAChanger" [ngModelOptions]="{standalone: true}" name="piecesAChanger"
+            placeholder="Liste, références…" disabled>
       </div>
     </div>
     <div class="col-12 col-lg-6">
       <div class="mb-3 h-100 d-flex flex-column">
         <label class="form-label">Commentaire</label>
         <textarea class="form-control big-textarea flex-grow-1" [(ngModel)]="demande.commentaire" [ngModelOptions]="{standalone: true}"
-          name="commentaire-inspection"></textarea>
+         name="commentaire-inspection" disabled></textarea>
       </div>
     </div>
   </div>
   <div class="d-flex justify-content-end mt-3">
-    <button class="btn btn-primary" (click)="saveChange()">Enregistrer</button>
+      <button class="btn btn-primary" (click)="saveChange()" disabled>Enregistrer</button>
   </div>
 </div>
 
@@ -103,23 +103,23 @@
     <div class="col-12 col-lg-6">
       <div class="mb-3">
         <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-devis">
+        <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-devis" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Prix pièce</label>
-  <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="demande.prixPiece" [ngModelOptions]="{standalone: true}" name="prixPiece">
+    <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="demande.prixPiece" [ngModelOptions]="{standalone: true}" name="prixPiece" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Prix horaire</label>
-        <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="demande.prixHoraire" [ngModelOptions]="{standalone: true}"
-          name="prixHoraire">
+          <input type="number" min="0" step="0.01" class="form-control" [(ngModel)]="demande.prixHoraire" [ngModelOptions]="{standalone: true}"
+            name="prixHoraire" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Prix total</label>
-  <input type="number" class="form-control" [(ngModel)]="demande.prixTotal" [ngModelOptions]="{standalone: true}" name="prixTotal">
+    <input type="number" class="form-control" [(ngModel)]="demande.prixTotal" [ngModelOptions]="{standalone: true}" name="prixTotal" disabled>
       </div>
     </div>
   </div>
@@ -134,22 +134,22 @@
     <div class="col-12 col-lg-6">
       <div class="mb-3">
         <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-intervention">
+        <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-intervention" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Date intervention</label>
-  <input type="date" class="form-control" [(ngModel)]="demande.dateIntervention" [ngModelOptions]="{standalone: true}" name="dateIntervention">
+    <input type="date" class="form-control" [(ngModel)]="demande.dateIntervention" [ngModelOptions]="{standalone: true}" name="dateIntervention" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Temps théorique</label>
-  <input class="form-control" [(ngModel)]="demande.tempsTheorique" [ngModelOptions]="{standalone: true}" name="tempsTheorique" placeholder="ex: 3h30">
+    <input class="form-control" [(ngModel)]="demande.tempsTheorique" [ngModelOptions]="{standalone: true}" name="tempsTheorique" placeholder="ex: 3h30" disabled>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Temps réel</label>
-  <input class="form-control" [(ngModel)]="demande.tempsReel" [ngModelOptions]="{standalone: true}" name="tempsReel" placeholder="ex: 4h05">
+    <input class="form-control" [(ngModel)]="demande.tempsReel" [ngModelOptions]="{standalone: true}" name="tempsReel" placeholder="ex: 4h05" disabled>
       </div>
     </div>
 
@@ -157,12 +157,12 @@
       <div class="mb-3 h-100 d-flex flex-column">
         <label class="form-label">Commentaire</label>
         <textarea class="form-control big-textarea flex-grow-1" [(ngModel)]="demande.commentaire" [ngModelOptions]="{standalone: true}"
-          name="commentaire-intervention"></textarea>
+         name="commentaire-intervention" disabled></textarea>
       </div>
     </div>
   </div>
   <div class="d-flex justify-content-end mt-3">
-    <button class="btn btn-primary" (click)="saveChange()">Enregistrer</button>
+      <button class="btn btn-primary" (click)="saveChange()" disabled>Enregistrer</button>
   </div>
 </div>
 
@@ -172,27 +172,28 @@
     <div class="col-12 col-lg-6">
       <div class="mb-3">
         <label class="form-label">Numéro</label>
-  <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-rapport">
+        <input class="form-control" [(ngModel)]="demande.numero" [ngModelOptions]="{standalone: true}" name="numero-rapport" disabled>
       </div>
 
       <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" id="finInterv" [(ngModel)]="demande.finIntervention" [ngModelOptions]="{standalone: true}"
-          name="finIntervention">
+        <input class="form-check-input" type="checkbox" id="finInterv" [(ngModel)]="demande.finIntervention" [ngModelOptions]="{standalone: true}" name="finIntervention" disabled>
         <label class="form-check-label" for="finInterv">Fin d'intervention</label>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Commentaire final</label>
-        <textarea class="form-control big-textarea" [(ngModel)]="demande.commentaireFinal" [ngModelOptions]="{standalone: true}"
-          name="commentaireFinal"></textarea>
+          <textarea class="form-control big-textarea" [(ngModel)]="demande.commentaireFinal" [ngModelOptions]="{standalone: true}"
+            name="commentaireFinal" disabled></textarea>
       </div>
     </div>
   </div>
   <div class="d-flex justify-content-end mt-3">
-    <button class="btn btn-primary" (click)="saveChange()">Enregistrer</button>
+    <button class="btn btn-primary" (click)="saveChange()" disabled>Enregistrer</button>
   </div>
 </div>
 
-<div class="d-flex justify-content-end mt-4">
+<div class="d-flex justify-content-end mt-4 gap-2">
+  <a class="btn btn-secondary" routerLink="/demandes">Voir la liste</a>
+  <a class="btn btn-outline-primary" routerLink="/demandes/add">Ajouter une demande</a>
   <button class="btn btn-success" (click)="fermerDemande()">Fermer la demande</button>
 </div>

@@ -1,7 +1,7 @@
 apiVersion: 1
 
 providers:
-  - name: 'DevMateriels Dashboards'
+  - name: 'Suivi des Logs'
     orgId: 1
     folder: ''
     type: file

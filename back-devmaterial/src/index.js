@@ -56,50 +56,33 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *       type: object
  *       properties:
  *         id:
- *           type: integer
- *         panne_id:
  *           type: string
- *         type_panne:
+ *           format: uuid
+ *         code:
+ *           type: string
+ *         statut:
+ *           type: string
+ *         dateCreation:
+ *           type: string
+ *           format: date
+ *         type:
  *           type: string
  *         commentaire:
  *           type: string
- *         date_demande:
- *           type: string
- *           format: date
- *         date_inspection:
- *           type: string
- *           format: date
- *         date_intervention:
- *           type: string
- *           format: date
- *         date_disponibilite:
- *           type: string
- *           format: date
- *         prix_devis:
- *           type: number
- *           format: double
- *         rapport:
- *           type: string
- *         devis_valide:
- *           type: boolean
- *         demande_cloturee:
- *           type: boolean
  *         client_id:
- *           type: integer
+ *           type: string
+ *           format: uuid
+ *         client_name:
+ *           type: string
  *       example:
- *         id: 1
- *         panne_id: "PANNE-001"
- *         type_panne: "Electrique"
+ *         id: "a1b2c3d4-..."
+ *         code: "REQ-0001"
+ *         statut: "open"
+ *         dateCreation: "2025-10-15"
+ *         type: "Electrique"
  *         commentaire: "Problème intermittent"
- *         date_demande: "2025-10-15"
- *         date_inspection: null
- *         date_intervention: null
- *         date_disponibilite: null
- *         prix_devis: 125.50
- *         rapport: null
- *         devis_valide: false
- *         demande_cloturee: false
- *         client_id: 42
+ *         client_id: "1111-2222-3333"
+ *         client_name: "ACME"
  */
 
 // --- Routes de l'API ---
@@ -122,7 +105,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  */
 app.get("/api/demandes", async (req, res) => {
     try {
-        const result = await pool.query("SELECT * FROM demandes ORDER BY id ASC");
+        // Return demandes with client name
+        const q = `SELECT d.*, c.nom AS client_name
+                   FROM demandes d
+                   LEFT JOIN client c ON d.client_id = c.id
+                   ORDER BY d.dateCreation DESC NULLS LAST`;
+        const result = await pool.query(q);
         res.json(result.rows);
     } catch (err) {
         console.error('Erreur lors de la récupération des demandes :', err);
@@ -154,37 +142,70 @@ app.get("/api/demandes", async (req, res) => {
  */
 app.post('/api/demandes', async (req, res) => {
     try {
-        // Accept english field names (fault_type, comment, fault_id) and french compatibility
-        const {
-            id,
-            fault_id,
-            fault_type,
-            comment,
-            // french
-            panne_id,
-            type_panne,
-            commentaire
-        } = req.body;
+        const id = req.body.id; // accept UUID
+        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const demandeType = req.body.type;
+        const commentaire = req.body.commentaire;
+        const client_name = req.body.client_name;
 
-        const finalFaultId = fault_id || panne_id || null;
-        const finalFaultType = fault_type || type_panne;
-        const finalComment = comment || commentaire || null;
 
-        if (!finalFaultType) return res.status(400).json({ error: 'fault_type (or type_panne) is required' });
+        // Validate required fields per your request
+        if (!commentaire) return res.status(400).json({ error: 'commentaire is required' });
+        if (!demandeType) return res.status(400).json({ error: 'type is required' });
+        if (!client_name) return res.status(400).json({ error: 'client_name is required' });
 
-        let result;
-        if (id) {
-            result = await pool.query(
-                `INSERT INTO demandes (id, fault_id, fault_type, comment, request_date) VALUES ($1, $2, $3, $4, CURRENT_DATE) RETURNING *`,
-                [id, finalFaultId, finalFaultType, finalComment]
-            );
-        } else {
-            result = await pool.query(
-                `INSERT INTO demandes (fault_id, fault_type, comment, request_date) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *`,
-                [finalFaultId, finalFaultType, finalComment]
-            );
+        // Verify client exists
+        const cCheck = await pool.query('SELECT id, nom FROM client WHERE nom = $1', [client_name]);
+        if (cCheck.rows.length === 0) return res.status(400).json({ error: 'client_name not found' });
+
+        // Use transaction to create demande and initial related rows
+        const clientNom = cCheck.rows[0].nom;
+        const clientIdFinal = cCheck.rows[0].id;
+        const conn = await pool.connect();
+        try {
+            await conn.query('BEGIN');
+            const insertDemandeQuery = id
+                ? `INSERT INTO demandes (id, code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`
+                : `INSERT INTO demandes (code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`;
+            const insertDemandeParams = id
+                ? [id, code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal]
+                : [code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal];
+
+            const rDem = await conn.query(insertDemandeQuery, insertDemandeParams);
+            const demandeRow = rDem.rows[0];
+
+            // Create initial inspection (empty)
+            const rInsp = await conn.query('INSERT INTO inspection (demande_id) VALUES ($1) RETURNING *', [demandeRow.id]);
+
+            // Inserer intervention
+            const rInterv = await conn.query('INSERT INTO intervention (demande_id, lieu, tempsReel, date) VALUES ($1, NULL, NULL, NULL) RETURNING *', [demandeRow.id]);
+
+            // Create initial rapport (empty)
+            const rRap = await conn.query('INSERT INTO rapport (demande_id, finIntervention, commentaire) VALUES ($1, false, NULL) RETURNING *', [demandeRow.id]);
+
+            // Create initial devis with zeroed prices and zero interval
+            const rDevis = await conn.query('INSERT INTO devis (prixDePiece, prixHoraire, tempsEstime, demande_id) VALUES ($1,$2,$3,$4) RETURNING *', [0, 0, '0 hours', demandeRow.id]);
+
+            await conn.query('COMMIT');
+
+            // attach client name for convenience
+            demandeRow.client_name = clientNom;
+
+
+            let structuredResponse = demandeRow;
+            structuredResponse.inspection = rInsp.rows[0];
+            structuredResponse.rapport = rRap.rows[0];
+            structuredResponse.devis = rDevis.rows[0];
+            structuredResponse.intervention = rInterv.rows[0];
+
+            return res.json(structuredResponse);
+        } catch (errInner) {
+            await conn.query('ROLLBACK');
+            console.error('Transaction failed:', errInner);
+            return res.status(500).json({ error: 'Erreur transaction' });
+        } finally {
+            conn.release();
         }
-        return res.json(result.rows[0]);
     } catch (err) {
         console.error('Erreur lors de la création de la demande :', err);
         return res.status(500).json({ error: 'Erreur serveur' });
@@ -195,9 +216,27 @@ app.post('/api/demandes', async (req, res) => {
 app.get('/api/demandes/:id', async (req, res) => {
     const id = req.params.id; // accept UUID string
     try {
-        const result = await pool.query('SELECT * FROM demandes WHERE id = $1', [id]);
+        const q = `SELECT d.*, c.nom AS client_name
+                   FROM demandes d
+                   LEFT JOIN client c ON d.client_id = c.id
+                   WHERE d.id = $1`;
+        const result = await pool.query(q, [id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
-        return res.json(result.rows[0]);
+        const demande = result.rows[0];
+
+        // fetch related items
+        const devis = (await pool.query('SELECT * FROM devis WHERE demande_id = $1 ORDER BY id', [id])).rows;
+        const interventions = (await pool.query('SELECT * FROM intervention WHERE demande_id = $1 ORDER BY id', [id])).rows;
+        const inspection = (await pool.query('SELECT * FROM inspection WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
+        const rapport = (await pool.query('SELECT * FROM rapport WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
+
+        let structuredResponse = demande;
+        structuredResponse.devis = devis;
+        structuredResponse.interventions = interventions;
+        structuredResponse.inspection = inspection;
+        structuredResponse.rapport = rapport;
+
+        return res.json(structuredResponse);
     } catch (err) {
         console.error('Erreur lors de la récupération de la demande :', err);
         return res.status(500).json({ error: 'Erreur serveur' });
@@ -208,12 +247,7 @@ app.get('/api/demandes/:id', async (req, res) => {
 app.patch('/api/demandes/:id', async (req, res) => {
     const id = req.params.id; // accept UUID
 
-    const allowed = [
-        // english
-        'fault_id','fault_type','comment','request_date','inspection_date','intervention_date',
-        'availability_date','estimate_price','report','estimate_validated','request_closed','client_id'
-    ];
-
+    const allowed = ['code','statut','dateCreation','type','commentaire','client_id'];
     const keys = Object.keys(req.body).filter(k => allowed.includes(k));
     if (keys.length === 0) return res.status(400).json({ error: 'No valid fields to update' });
 
@@ -286,14 +320,18 @@ async function subscribeToWebhook() {
     }
 }
 
-app.listen(port, async () => {
-    console.log(`✅ Backend running on port ${port}`);
-    console.log(`📄 Documentation API disponible sur http://localhost:${port}/api-docs`);
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(port, async () => {
+        console.log(`✅ Backend running on port ${port}`);
+        console.log(`📄 Documentation API disponible sur http://localhost:${port}/api-docs`);
 
-    // Connexion au webhook
-    setTimeout(async () => {
-        console.log('⏳ Tentative de connexion au webhook...');
-        await subscribeToWebhook();
-    }, 10000);
+        // Connexion au webhook
+        setTimeout(async () => {
+            console.log('⏳ Tentative de connexion au webhook...');
+            await subscribeToWebhook();
+        }, 10000);
 
-});
+    });
+}
+
+export default app;
