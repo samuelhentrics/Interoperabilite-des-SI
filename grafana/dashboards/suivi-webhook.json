@@ -163,7 +163,7 @@
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "orientation": "auto",
         "showValue": "auto",
@@ -382,7 +382,7 @@
           }
         }
       ],
-      "title": "Panel Title",
+      "title": "Latence moyenne des webhooks",
       "transparent": true,
       "type": "stat"
     },
@@ -488,6 +488,6 @@
   "timezone": "browser",
   "title": "Suivi des logs",
   "uid": "ef189b20i5fk0f",
-  "version": 5,
+  "version": 7,
   "weekStart": ""
 }
