@@ -320,7 +320,6 @@ async function subscribeToWebhook() {
     }
 }
 
-
 if (process.env.NODE_ENV !== 'test') {
     app.listen(port, async () => {
         console.log(`✅ Backend running on port ${port}`);
