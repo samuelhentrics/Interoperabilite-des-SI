@@ -184,7 +184,7 @@ app.post('/api/demandes', async (req, res) => {
             const rRap = await conn.query('INSERT INTO rapport (demande_id, finIntervention, commentaire) VALUES ($1, false, NULL) RETURNING *', [demandeRow.id]);
 
             // Create initial devis with zeroed prices and zero interval
-            const rDevis = await conn.query('INSERT INTO devis (prixDePiece, prixHoraire, tempsEstime, demande_id) VALUES ($1,$2,$3,$4) RETURNING *', [0, 0, '0 hours', demandeRow.id]);
+            const rDevis = await conn.query('INSERT INTO devis (prixDePiece, prixHoraire, tempsEstime, demande_id) VALUES ($1,$2,$3,$4) RETURNING *', [0, 0, 0, demandeRow.id]);
 
             await conn.query('COMMIT');
 

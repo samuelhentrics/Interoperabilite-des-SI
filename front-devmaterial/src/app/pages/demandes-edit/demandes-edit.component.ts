@@ -120,6 +120,19 @@ export class DemandesEditComponent implements OnInit {
       next: (data: any) => {
         console.log('Demande data:', data);
         // normalize the backend shape if necessary
+        const fmt = (d: any) => {
+          if (!d) return null;
+          if (typeof d === 'string') {
+            // keep only date part for input[type=date]
+            return d.includes('T') ? d.split('T')[0] : d;
+          }
+          try {
+            return new Date(d).toISOString().slice(0, 10);
+          } catch (e) {
+            return null;
+          }
+        };
+
         this.demande = {
           id: data.id,
           code: data.code || data.numero || '',
@@ -131,7 +144,7 @@ export class DemandesEditComponent implements OnInit {
           client_name: data.client_name || (data.client ? data.client.nom : null),
           devis: data.devis || [],
           interventions: data.interventions || [],
-          inspection: data.inspection || null,
+          inspection: data.inspection ? { ...data.inspection, date: fmt(data.inspection.date) } : null,
           rapport: data.rapport || null
         };
       },
@@ -145,6 +158,23 @@ export class DemandesEditComponent implements OnInit {
 
   saveChange() {
     // Send the normalized JSON back to the backend with PUT
+
+    // faire les modifs necessaires avant envoi
+    if (this.demande.interventions && this.demande.interventions.length === 0) {
+      // if currentIntervention has data, push it to the array
+      const ci = this.currentIntervention;
+      if (ci.date || ci.lieu || ci.tempsreel || ci.commentaire) {
+        this.demande.interventions.push(ci);
+      }
+    }
+    if (this.demande.devis && this.demande.devis.length === 0) {
+      // if currentDevis has data, push it to the array
+      const cd = this.currentDevis;
+      if (cd.prixdepiece || cd.prixhoraire || cd.tempsestime) {
+        this.demande.devis.push(cd);
+      }
+    }
+
     const payload = { ...this.demande };
     this.http.put(`http://localhost:3000/api/demandes/${this.demandeId}`, payload).subscribe({
       next: (res) => {

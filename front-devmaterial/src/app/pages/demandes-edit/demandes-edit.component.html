@@ -66,14 +66,14 @@
   <div class="row g-3">
     <div class="col-12 col-lg-6">
 
-      <div class="mb-3">
-        <label class="form-label">Date inspection</label>
-  <input type="date" class="form-control" [(ngModel)]="demande.inspection.dateInspection" [ngModelOptions]="{standalone: true}" name="dateInspection">
-      </div>
+  <div class="mb-3">
+    <label class="form-label">Date inspection</label>
+  <input type="date" class="form-control" [(ngModel)]="demande.inspection.date" [ngModelOptions]="{standalone: true}" name="dateInspection">
+  </div>
 
       <div class="mb-3">
         <label class="form-label">Pièces à changer</label>
-        <input class="form-control" [(ngModel)]="demande.inspection.piecesAChanger" [ngModelOptions]="{standalone: true}" name="piecesAChanger"
+        <input class="form-control" [(ngModel)]="demande.inspection.piecedefectueuse" [ngModelOptions]="{standalone: true}" name="piecesAChanger"
           placeholder="Liste, références…">
       </div>
     </div>
