@@ -219,14 +219,12 @@ async function sendWebhook(from: string, event: string, body: any) {
 
 app.post('/api/demandes', async (req, res) => {
     console.log('ANALIA')
-    const { message } = req.body;
-
     
     const from = req.body.from;
     const body = req.body.body;
     const event = 'add-demande';
 
-    if (!message) {
+    if (!from || !body || !event) {
         return res.status(400).send({ error: 'Message is required' });
     }
 
