@@ -4,6 +4,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import cors from 'cors';
 import 'dotenv/config';
+import { create } from "domain";
 
 
 const { Pool } = pkg;
@@ -375,6 +376,7 @@ app.delete('/api/demandes/:id', async (req, res) => {
 
 async function createDemande(data) {
     try {
+        console.log(data);
         const id = data.id; // accept UUID
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         const demandeType = data.type;
@@ -451,6 +453,30 @@ app.post("/webhook", (req, res) => {
 
     console.log("📩 Webhook reçu :", payload);
     console.log("🔐 Signature :", signature);
+
+    // recuperer l'event, et le body
+    const event = req.body.event;
+    const body = req.body.body;
+
+    if (!body || !event) {
+        return res.status(400).send({ error: "Invalid webhook payload" });
+    }
+
+    // Traiter l'événement en fonction de son type
+    switch (event) {
+        case "add-demande":
+            console.log("Nouvelle demande reçue :", body);
+            createDemande(body);
+            break;
+        case "update-demande":
+            console.log("Demande mise à jour :", body);
+            break;
+        case "delete-demande":
+            console.log("Demande supprimée :", body);
+            break;
+        default:
+            console.log("Événement inconnu :", event);
+    }
 
     res.status(200).send({ message: "Event received" });
 });
