@@ -374,15 +374,14 @@ app.delete('/api/demandes/:id', async (req, res) => {
     }
 });
 
-async function createDemande(data) {
+async function createDemande(data, clientname = null) {
     try {
         console.log(data);
         const id = data.id; // accept UUID
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         const demandeType = data.type;
         const commentaire = data.commentaire;
-        const client_name = data.client_name;
-
+        let client_name = data.client_name;
 
         // Validate required fields per your request
         if (!commentaire) throw new Error('commentaire is required');

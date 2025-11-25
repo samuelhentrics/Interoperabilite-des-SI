@@ -118,6 +118,7 @@ async function buildWebhookBodyForDemande(demandeId) {
     commentaire: d.comment ?? null,   // comment -> commentaire
     clientId: null,                   // pas en base aujourd’hui
     clientName: null,
+    client_name: process.env.CLIENT_NAME || null,
     devis,
     interventions,
     inspection,
