@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-demandes-add',
@@ -22,7 +23,7 @@ export class DemandesAddComponent {
     if (!this.type_panne) return alert('Le type de panne est requis');
     this.submitting = true;
     try {
-      const resp: any = await this.http.post('/api/demandes', {
+      const resp: any = await this.http.post(`${environment.apiUrl}/demandes`, {
         fault_id: this.panne_id || undefined,
         fault_type: this.type_panne
       }).toPromise();

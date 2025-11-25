@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 type TabKey = 'info' | 'inspection' | 'devis' | 'intervention' | 'rapport';
 
@@ -116,7 +117,7 @@ export class DemandesEditComponent implements OnInit {
   }
 
   getDemande() {
-    this.http.get(`http://localhost:3000/api/demandes/${this.demandeId}`).subscribe({
+    this.http.get(`${environment.apiUrl}/demandes/${this.demandeId}`).subscribe({
       next: (data: any) => {
         console.log('Demande data:', data);
         // normalize the backend shape if necessary
@@ -176,7 +177,7 @@ export class DemandesEditComponent implements OnInit {
     }
 
     const payload = { ...this.demande };
-    this.http.put(`http://localhost:3000/api/demandes/${this.demandeId}`, payload).subscribe({
+    this.http.put(`${environment.apiUrl}/demandes/${this.demandeId}`, payload).subscribe({
       next: (res) => {
         console.log('Save successful', res);
         alert('Enregistré');
@@ -200,7 +201,7 @@ export class DemandesEditComponent implements OnInit {
 
   deleteDemande() {
     this.isDeleting.set(true);
-    this.http.delete(`/api/demandes/${this.demandeId}`).subscribe({
+    this.http.delete(`${environment.apiUrl}/demandes/${this.demandeId}`).subscribe({
       next: () => {
         this.isDeleting.set(false);
         this.router.navigate(['/demandes']);

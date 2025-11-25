@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Demande {
   id: string; // UUID
@@ -14,7 +15,7 @@ export interface Demande {
   providedIn: 'root'
 })
 export class DemandesService {
-  private apiUrl = 'http://localhost:3001/api/demandes';
+  private apiUrl = `${environment.apiUrl}/demandes`;
 
   constructor(private http: HttpClient) {}
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Demande {
   id: string; // UUID
@@ -27,7 +28,7 @@ export interface Demande {
   providedIn: 'root'
 })
 export class DemandesService {
-  private apiUrl = 'http://localhost:3000/api/demandes'; // URL de ton back
+  private apiUrl = `${environment.apiUrl}/demandes`; // Base URL from environment
 
   constructor(private http: HttpClient) {}
 

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 type TabKey = 'info' | 'inspection' | 'devis' | 'intervention' | 'rapport';
 
@@ -86,7 +87,7 @@ export class DemandesEditComponent implements OnInit {
   saveChange() {
     // Convert current `demande` object to XML and PUT to backend
     const xml = this.buildDemandeXml(this.demande);
-    this.http.put(`/api/demandes/${this.demandeId}`, xml, {
+    this.http.put(`${environment.apiUrl}/demandes/${this.demandeId}`, xml, {
       headers: { 'Content-Type': 'application/xml' },
       responseType: 'text'
     }).subscribe({
@@ -102,7 +103,7 @@ export class DemandesEditComponent implements OnInit {
   }
 
   private loadDemande() {
-    this.http.get(`/api/demandes/${this.demandeId}`, { responseType: 'text' }).subscribe({
+    this.http.get(`${environment.apiUrl}/demandes/${this.demandeId}`, { responseType: 'text' }).subscribe({
       next: (xmlText) => {
         try {
           const parser = new DOMParser();
@@ -170,7 +171,7 @@ export class DemandesEditComponent implements OnInit {
 
   deleteDemande() {
     this.isDeleting.set(true);
-    this.http.delete(`/api/demandes/${this.demandeId}`).subscribe({
+    this.http.delete(`${environment.apiUrl}/demandes/${this.demandeId}`).subscribe({
       next: () => {
         this.isDeleting.set(false);
         this.router.navigate(['/demandes']);

@@ -33,7 +33,7 @@ services:
       - webhook-db
 
   db-devmaterial:
-    build: ./db-devmaterial
+    image: postgres:16
     container_name: db-devmaterial
     ports:
       - "5433:5432"
@@ -45,6 +45,7 @@ services:
       POSTGRES_DB: db_devmaterial
     volumes:
       - db_data_devmaterial:/var/lib/postgresql/data
+      - ./db-devmaterial/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
   back-devmaterial:
     build: ./back-devmaterial
@@ -69,6 +70,9 @@ services:
       - back-devmaterial
     environment:
       - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./front-devmaterial:/app
+      - /app/node_modules
     ports:
       - "4200:4200"
 
@@ -76,7 +80,7 @@ services:
   # === WAGONLITS ====
   # ==================
   db-wagonlits:
-    build: ./db-wagonlits
+    image: postgres:16
     container_name: db-wagonlits
     ports:
       - "5434:5432"
@@ -88,6 +92,7 @@ services:
       POSTGRES_DB: db_wagonlits
     volumes:
       - db_data_wagonlits:/var/lib/postgresql/data
+      - ./db-wagonlits/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
   back-wagonlits:
     build: ./back-wagonlits
@@ -112,6 +117,9 @@ services:
       - back-wagonlits
     environment:
       - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./front-wagonlits:/app
+      - /app/node_modules
     ports:
       - "4201:4200"
 
