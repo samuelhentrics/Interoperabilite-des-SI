@@ -482,16 +482,24 @@ app.post("/webhook", (req, res) => {
     res.status(200).send({ message: "Event received" });
 });
 
-async function publishToWebhookPost(url, data) {
+async function publishToWebhookPost(url, data, event) {
     try {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            body: JSON.stringify({
+                from: process.env.DEFAULT_CLIENT_NAME || 'erp-devmaterial',
+                event: event,
+                body: data
+            }),
         });
         if (!response.ok) {
+            console.log("Response not ok:", response);
             const text = await response.text().catch(() => '<no body>');
             throw new Error(`HTTP ${response.status} - ${text}`);
+        }
+        else {
+            console.log("Webhook POST successful to", url);
         }
     } catch (err) {
         throw err;

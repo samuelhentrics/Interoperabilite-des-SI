@@ -930,6 +930,7 @@ app.delete('/api/demandes/:id', async (req, res) => {
 
 // --- webhook test endpoint (facultatif)
 app.post('/webhook', (req, res) => {
+  console.log("YOUPIIIIIIIIIII J AI LES INFOS")
   const signature = req.headers['x-signature'];
   const payload = JSON.stringify(req.body);
   console.log('📩 Webhook reçu :', payload);
