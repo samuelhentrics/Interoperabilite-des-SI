@@ -143,7 +143,7 @@ app.get("/api/demandes", async (req, res) => {
  */
 app.post('/api/demandes', async (req, res) => {
     try {
-        await createDemande(req.body);
+        let result = await createDemande(req.body, req.body.client_name);
 
         try{
             await publishToWebhookPost(process.env.WEBHOOK_POST_URL + "/api/demandes", req.body);
@@ -151,6 +151,8 @@ app.post('/api/demandes', async (req, res) => {
         catch (err) {
             console.error('Erreur lors de l\'envoi du webhook :', err);
         }
+
+        return res.json(result);
     } catch (err) {
         console.error('Erreur lors de la création de la demande :', err);
         return res.status(500).json({ error: 'Erreur serveur' });
@@ -381,7 +383,7 @@ async function createDemande(data, clientname = null) {
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         const demandeType = data.type;
         const commentaire = data.commentaire;
-        let client_name = data.client_name;
+        let client_name = data.client_name || clientname;
 
         // Validate required fields per your request
         if (!commentaire) throw new Error('commentaire is required');
@@ -432,7 +434,7 @@ async function createDemande(data, clientname = null) {
             structuredResponse.devis = rDevis.rows[0];
             structuredResponse.intervention = rInterv.rows[0];
 
-            return res.json(structuredResponse);
+            return structuredResponse;
         } catch (errInner) {
             await conn.query('ROLLBACK');
             throw errInner;

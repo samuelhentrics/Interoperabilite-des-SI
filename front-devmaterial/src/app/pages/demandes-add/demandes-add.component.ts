@@ -15,6 +15,9 @@ import { environment } from '../../../environments/environment';
 export class DemandesAddComponent {
   panne_id = '';
   type_panne = '';
+  comment_panne = 'OK';
+  clients=[{id:"erp-wagonlits", name:'wagonlits'}];
+  client_name = 'erp-wagonlits';
   submitting = false;
 
   constructor(private http: HttpClient, private router: Router) {}
@@ -25,7 +28,9 @@ export class DemandesAddComponent {
     try {
       const resp: any = await this.http.post(`${environment.apiUrl}/demandes`, {
         fault_id: this.panne_id || undefined,
-        fault_type: this.type_panne
+        type: this.type_panne,
+        commentaire: this.comment_panne || undefined,
+        client_name: this.client_name || undefined
       }).toPromise();
       console.log('Created demande', resp);
       this.router.navigate(['/demandes']);
