@@ -1,5 +1,11 @@
 <div class="container my-3">
   <h3>Liste des demandes</h3>
+
+  <!-- Bouton ajouter qui rediriges verds /demandes/add -->
+
+  <div class="mb-3">
+    <a class="btn btn-primary" [routerLink]="['/demandes/add']">Ajouter une demande</a>
+  </div>
   <div class="table-responsive">
     <table class="table table-striped table-bordered">
       <thead class="table-light">
