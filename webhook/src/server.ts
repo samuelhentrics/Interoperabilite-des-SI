@@ -223,6 +223,8 @@ app.post('/api/demandes', async (req, res) => {
     const from = req.body.from;
     const body = req.body.body;
     const event = 'add-demande';
+
+    console.log(from, body, event)
     if (!from || !body || !event) {
         return res.status(400).send({ error: 'Message is required' });
     }
