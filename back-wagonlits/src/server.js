@@ -115,10 +115,11 @@ async function buildWebhookBodyForDemande(demandeId) {
     code: d.code ?? null,
     statut: d.state,                  // state -> statut
     dateCreation: d.datecreation,     // createdAt -> dateCreation
+    type: d.type ?? null, 
     commentaire: d.comment ?? null,   // comment -> commentaire
     clientId: null,                   // pas en base aujourd’hui
     clientName: null,
-    client_name: process.env.CLIENT_NAME || null,
+    client_name: process.env.DEFAULT_CLIENT_NAME || null,
     devis,
     interventions,
     inspection,
@@ -453,26 +454,79 @@ app.get('/api/demandes/:id', async (req, res) => {
  *         content: { application/xml: { schema: { type: string } } }
  */
 app.post('/api/demandes', express.text({ type: 'application/xml' }), async (req, res) => {
-  if (!req.is('application/xml')) {
-    return res.status(415).type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><error>Unsupported Media Type: use application/xml</error>`);
+  // 👇 On prépare une variable xml qui contiendra le XML final
+  let xml;
+
+  // 1) Cas ERP ou webhook : on nous envoie déjà du XML
+  if (req.is('application/xml')) {
+    xml = req.body || '';
+  }
+  // 2) Cas FRONT WagonLits : il envoie du JSON
+  else if (req.is('application/json')) {
+    const src = req.body || {};
+
+     console.log('RAW JSON reçu du front /api/demandes :', src);
+
+    // On adapte le JSON du front au schéma attendu par jsonToDemandeXml
+    const jsonForXml = {
+      id: src.id,                         // optionnel
+      code: src.code ?? src.fault_id ?? null,                     // optionnel
+      statut: src.statut ?? src.state ?? 0, // par défaut 0
+      type:
+          src.type ??
+          src.typePanne ??
+          src.type_panne ??
+          src.typepanne ??
+          src.fault_type ??
+          null,
+      commentaire:
+          src.commentaire ??
+          src.comment ??
+          src.description ??
+          src.message ??
+          (src.fault_id || src.fault_type
+            ? `Fault ${src.fault_id ?? ''} (${src.fault_type ?? ''})`
+            : null),
+      devis: src.devis || [],
+      interventions: src.interventions || [],
+      inspection: src.inspection || null,
+    };
+
+    console.log('POST /api/demandes reçu en JSON, conversion en XML :', jsonForXml);
+    xml = jsonToDemandeXml(jsonForXml);
+    console.log('XML généré depuis JSON front :', xml);
+  }
+  else {
+    return res
+      .status(415)
+      .type('application/xml')
+      .send(
+        `<?xml version="1.0" encoding="UTF-8"?>` +
+          `<error>Unsupported Media Type: use application/xml or application/json</error>`
+      );
   }
 
   const client = await pool.connect();
   try {
-    const xml = req.body || '';
     const getTag = (name) => {
       const m = xml.match(new RegExp(`<${name}>([\\s\\S]*?)</${name}>`, 'i'));
       return m ? m[1].trim() : undefined;
     };
     const nn = (v) => (v === undefined || v === '' ? null : v);
 
-    const idVal = getTag('id'); // optionnel
+    const idVal = getTag('id');
     const typeVal = getTag('type');
     const commentVal = getTag('comment');
     const codeVal = getTag('code');
 
     if (idVal && !isUUID(idVal)) {
-      return res.status(400).type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><error>Invalid UUID for &lt;id&gt;</error>`);
+      return res
+        .status(400)
+        .type('application/xml')
+        .send(
+          `<?xml version="1.0" encoding="UTF-8"?>` +
+            `<error>Invalid UUID for &lt;id&gt;</error>`
+        );
     }
 
     await client.query('BEGIN');
@@ -496,34 +550,54 @@ app.post('/api/demandes', express.text({ type: 'application/xml' }), async (req,
     }
     await client.query('COMMIT');
 
-    // 🔔 Webhook JSON (avec toutes les tables — ici vides par défaut après création)
+    // Webhook json
     buildWebhookBodyForDemande(d.id)
-      .then(body => body && sendWebhookDemande(body))
-      .catch(e => console.error('⚠️ build/send webhook error:', e));
+      .then((body) => body && sendWebhookDemande(body))
+      .catch((e) => console.error('⚠️ build/send webhook error:', e));
 
-    return res.status(201).type('application/xml').send(
-      `<?xml version="1.0" encoding="UTF-8"?>` +
-      `<demande>` +
-        `<id>${xmlEscape(d.id)}</id>` +
-        `<code>${xmlEscape(d.code ?? '')}</code>` +
-        `<state>${xmlEscape(d.state)}</state>` +
-        `<createdat>${xmlEscape(d.createdat)}</createdat>` +
-        `<type>${xmlEscape(d.type ?? '')}</type>` +
-        `<comment>${xmlEscape(d.comment ?? '')}</comment>` +
-      `</demande>`
-    );
+    return res
+      .status(201)
+      .type('application/xml')
+      .send(
+        `<?xml version="1.0" encoding="UTF-8"?>` +
+          `<demande>` +
+          `<id>${xmlEscape(d.id)}</id>` +
+          `<code>${xmlEscape(d.code ?? '')}</code>` +
+          `<state>${xmlEscape(d.state)}</state>` +
+          `<createdat>${xmlEscape(d.createdat)}</createdat>` +
+          `<type>${xmlEscape(d.type ?? '')}</type>` +
+          `<comment>${xmlEscape(d.comment ?? '')}</comment>` +
+          `</demande>`
+      );
   } catch (err) {
     if (err && err.code === '23505') {
-      try { await client.query('ROLLBACK'); } catch {}
-      return res.status(409).type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><error>Conflict: id already exists</error>`);
+      try {
+        await client.query('ROLLBACK');
+      } catch {}
+      return res
+        .status(409)
+        .type('application/xml')
+        .send(
+          `<?xml version="1.0" encoding="UTF-8"?>` +
+            `<error>Conflict: id already exists</error>`
+        );
     }
     console.error('POST /api/demandes error:', err);
-    try { await client.query('ROLLBACK'); } catch {}
-    return res.status(500).type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><error>Failed to create demande</error>`);
+    try {
+      await client.query('ROLLBACK');
+    } catch {}
+    return res
+      .status(500)
+      .type('application/xml')
+      .send(
+        `<?xml version="1.0" encoding="UTF-8"?>` +
+          `<error>Failed to create demande</error>`
+      );
   } finally {
     client.release();
   }
 });
+
 
 
 /**
@@ -928,15 +1002,229 @@ app.delete('/api/demandes/:id', async (req, res) => {
   }
 });
 
-// --- webhook test endpoint (facultatif)
-app.post('/webhook', (req, res) => {
-  console.log("YOUPIIIIIIIIIII J AI LES INFOS")
+// --- Webhook JSON -> appel XML interne (/api/demandes) ---
+app.post('/webhook', async (req, res) => {
   const signature = req.headers['x-signature'];
   const payload = JSON.stringify(req.body);
   console.log('📩 Webhook reçu :', payload);
   console.log('🔐 Signature :', signature);
-  res.status(200).send({ message: 'Event received' });
+  
+  const event = req.body?.event;
+  const body = req.body?.body;
+  const from  = req.body?.from; 
+
+  if (!event || !body) {
+    console.error('❌ Payload invalide, il manque event ou body');
+    return res.status(400).json({ error: 'Invalid webhook payload' });
+  }
+
+  if (from === WEBHOOK_FROM) {
+    console.log(`🔁 Webhook provenant de nous-mêmes (${from}), on l’ignore.`);
+    return res.status(200).json({ message: 'Ignored self-originated event' });
+  }
+  console.log(`🔁 Webhook provenant de nous-mêmes (${from}), on passe`);
+
+  try {
+    switch (event) {
+      case 'add-demande': {
+        console.log('🟢 Event add-demande reçu, génération XML & POST /api/demandes');
+        const xml = jsonToDemandeXml(body);
+        console.log('🔧 XML généré :', xml);
+
+        const resp = await fetch(`http://localhost:${PORT}/api/demandes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/xml' },
+          body: xml,
+        });
+
+        const respText = await resp.text();
+        console.log('📨 Réponse ERP (POST /api/demandes) status=', resp.status);
+        console.log('📨 Corps réponse ERP :', respText);
+
+        if (!resp.ok) {
+          return res.status(502).json({
+            error: 'Failed to create demande in wagonlits ERP',
+            status: resp.status,
+            body: respText,
+          });
+        }
+
+        return res.status(200).json({ message: 'Demande créée dans wagonlits', xmlSent: xml });
+      }
+
+      case 'update-demande': {
+        console.log('🟡 Event update-demande reçu, génération XML & PUT /api/demandes/:id');
+        const id = body.id;
+        if (!id) {
+          return res.status(400).json({ error: 'update-demande nécessite body.id' });
+        }
+
+        const xml = jsonToDemandeXml(body);
+        console.log('🔧 XML généré :', xml);
+
+        const resp = await fetch(`http://localhost:${PORT}/api/demandes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/xml' },
+          body: xml,
+        });
+
+        const respText = await resp.text();
+        console.log('📨 Réponse ERP (PUT /api/demandes/:id) status=', resp.status);
+        console.log('📨 Corps réponse ERP :', respText);
+
+        if (!resp.ok) {
+          return res.status(502).json({
+            error: 'Failed to update demande in wagonlits ERP',
+            status: resp.status,
+            body: respText,
+          });
+        }
+
+        return res.status(200).json({ message: 'Demande mise à jour dans wagonlits', xmlSent: xml });
+      }
+
+      case 'delete-demande': {
+        console.log('🔴 Event delete-demande reçu, DELETE /api/demandes/:id');
+        const id = body.id;
+        if (!id) {
+          return res.status(400).json({ error: 'delete-demande nécessite body.id' });
+        }
+
+        const resp = await fetch(`http://localhost:${PORT}/api/demandes/${id}`, {
+          method: 'DELETE',
+        });
+
+        const respText = await resp.text();
+        console.log('📨 Réponse ERP (DELETE /api/demandes/:id) status=', resp.status);
+        console.log('📨 Corps réponse ERP :', respText);
+
+        if (!resp.ok) {
+          return res.status(502).json({
+            error: 'Failed to delete demande in wagonlits ERP',
+            status: resp.status,
+            body: respText,
+          });
+        }
+
+        return res.status(200).json({ message: 'Demande supprimée dans wagonlits' });
+      }
+
+      default: {
+        console.log('⚪ Event inconnu :', event);
+        return res.status(400).json({ error: `Unknown event: ${event}` });
+      }
+    }
+  } catch (err) {
+    console.error('💥 Erreur dans le handler /webhook wagonlits :', err);
+    return res.status(500).json({ error: 'Internal error in wagonlits webhook' });
+  }
 });
+
+
+// ========= JSON → XML adapter ========= 
+// // mappe un objet JSON (schéma webhook) vers le XML accepté par /api/demandes 
+function jsonToDemandeXml(json) {
+  const j = json || {};
+  const id = j.id;
+  const code = j.code;
+  const state = j.statut;            // statut -> state
+  const type = j.type ?? null;       // si jamais il arrive
+  const comment = j.commentaire;     // commentaire -> comment
+
+  // ---- inspection (optionnelle) ----
+  const ins = j.inspection || null;
+  const inspectionXml = ins
+    ? (
+        `<inspection>` +
+          (ins.id
+            ? `<id>${xmlEscape(ins.id)}</id>`
+            : ``) +
+          (ins.date != null
+            ? `<inspectedat>${xmlEscape(ins.date)}</inspectedat>`
+            : ``) + // date -> inspectedat
+          (ins.piecedefectueuse != null
+            ? `<defectivecomponent>${xmlEscape(ins.piecedefectueuse)}</defectivecomponent>`
+            : ``) + // piecedefectueuse -> defectivecomponent
+          (ins.commentaire != null
+            ? `<comment>${xmlEscape(ins.commentaire)}</comment>`
+            : ``) + // commentaire -> comment
+        `</inspection>`
+      )
+    : ``;
+
+  // ---- devis (liste) ----
+  const devis = Array.isArray(j.devis) ? j.devis : [];
+  const devisXml =
+    `<devis>` +
+      devis.map(dv =>
+        `<item>` +
+          (dv.id
+            ? `<id>${xmlEscape(dv.id)}</id>`
+            : ``) +
+          (dv.prixdepiece != null
+            ? `<pricecomponent>${xmlEscape(dv.prixdepiece)}</pricecomponent>`
+            : ``) + // prixdepiece -> pricecomponent
+          (dv.prixhoraire != null
+            ? `<pricehour>${xmlEscape(dv.prixhoraire)}</pricehour>`
+            : ``) + // prixhoraire -> pricehour
+          (dv.tempsestime != null
+            ? `<estimatedtime>${xmlEscape(dv.tempsestime)}</estimatedtime>`
+            : ``) + // tempsestime (INTEGER minutes) -> estimatedtime
+        `</item>`
+      ).join('') +
+    `</devis>`;
+
+  // ---- interventions (liste) ----
+  const interventions = Array.isArray(j.interventions) ? j.interventions : [];
+  const interventionsXml =
+    `<interventions>` +
+      interventions.map(it =>
+        `<item>` +
+          (it.id
+            ? `<id>${xmlEscape(it.id)}</id>`
+            : ``) +
+          (it.date != null
+            ? `<interventiondate>${xmlEscape(it.date)}</interventiondate>`
+            : ``) + // date -> interventiondate
+          (it.lieu != null
+            ? `<localisation>${xmlEscape(it.lieu)}</localisation>`
+            : ``) + // lieu -> localisation
+          (it.tempsreel != null
+            ? `<realtime>${xmlEscape(it.tempsreel)}</realtime>`
+            : ``) + // tempsreel (INTEGER minutes) -> realtime
+          (it.commentaire != null
+            ? `<comment>${xmlEscape(it.commentaire)}</comment>`
+            : ``) + // commentaire -> comment
+        `</item>`
+      ).join('') +
+    `</interventions>`;
+
+  // ---- XML final ----
+  const xml =
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<demande>` +
+      (id
+        ? `<id>${xmlEscape(id)}</id>`
+        : ``) +
+      (code != null
+        ? `<code>${xmlEscape(code)}</code>`
+        : ``) +
+      (state != null
+        ? `<state>${xmlEscape(state)}</state>`
+        : ``) +
+      (type != null
+        ? `<type>${xmlEscape(type)}</type>`
+        : ``) +
+      (comment != null
+        ? `<comment>${xmlEscape(comment)}</comment>`
+        : ``) +
+      inspectionXml +
+      devisXml +
+      interventionsXml +
+    `</demande>`;
+
+  return xml;
+}
 
 
 async function subscribeToWebhook() {

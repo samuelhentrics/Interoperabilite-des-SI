@@ -26,7 +26,11 @@ export class DemandesAddComponent {
       const resp: any = await this.http.post(`${environment.apiUrl}/demandes`, {
         fault_id: this.panne_id || undefined,
         fault_type: this.type_panne
-      }).toPromise();
+      },
+      {
+        responseType: 'text' as 'json', // important
+      }
+    ).toPromise();
       console.log('Created demande', resp);
       this.router.navigate(['/demandes']);
     } catch (err) {

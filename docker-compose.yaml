@@ -52,6 +52,7 @@ services:
     container_name: back-devmaterial
     depends_on:
       - db-devmaterial
+      - webhook-service
     environment:
       PORT: 3000
       DB_HOST: db-devmaterial
@@ -59,6 +60,12 @@ services:
       DB_PASSWORD: devpass
       DB_NAME: db_devmaterial
       DB_PORT: 5432
+
+      WEBHOOK_SUBSCRIBE_URL: http://webhook-service:3000/subscribe
+      CALLBACK_URL: http://back-devmaterial:3000/webhook
+      WEBHOOK_POST_URL: http://webhook-service:3000
+      WEBHOOK_WHO: erp-devmaterial
+      DEFAULT_CLIENT_NAME: erp-devmaterial
     ports:
       - "3000:3000"
 
