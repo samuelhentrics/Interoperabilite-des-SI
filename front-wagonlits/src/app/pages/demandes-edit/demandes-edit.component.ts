@@ -58,12 +58,12 @@ export class DemandesEditComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router) { }
 
-  demandeId!: number;
+  demandeId!: string;
 
   ngOnInit(): void {
     // Récupérer l'ID de la demande depuis l'URL
-    this.demandeId = Number(this.route.snapshot.paramMap.get('id'));
-    this.numDemande = this.genNumDemande();
+    this.demandeId = this.route.snapshot.paramMap.get('id') || '';
+    //this.numDemande = this.genNumDemande();
 
     // Onglet depuis l'URL
     // charger la demande depuis l'API (XML)
@@ -103,61 +103,100 @@ export class DemandesEditComponent implements OnInit {
   }
 
   private loadDemande() {
-    this.http.get(`${environment.apiUrl}/demandes/${this.demandeId}`, { responseType: 'text' }).subscribe({
-      next: (xmlText) => {
-        try {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(xmlText, 'application/xml');
-          // naive parsing: map known nodes to fields
-          const getText = (tag: string) => {
-            const el = doc.getElementsByTagName(tag)[0];
-            return el ? el.textContent || '' : '';
+  this.http.get(`${environment.apiUrl}/demandes/${this.demandeId}`, { responseType: 'text' }).subscribe({
+    next: (xmlText) => {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlText, 'application/xml');
+
+        const getText = (tag: string, parent: Element | Document = doc) => {
+          const el = parent.getElementsByTagName(tag)[0];
+          return el ? (el.textContent || '').trim() : '';
+        };
+
+        // racine <demande>
+        const root = doc.getElementsByTagName('demande')[0] || doc;
+
+        this.demande.id          = getText('id', root);
+        this.demande.code        = getText('code', root);
+        this.demande.statut      = getText('state', root);
+        this.demande.dateCreation= getText('createdat', root);
+        this.demande.type        = getText('type', root);
+        this.demande.commentaire = getText('comment', root);
+
+        this.numDemande = this.demande.code || this.demande.id || this.numDemande;
+
+        // inspection
+        const inspEl = root.getElementsByTagName('inspection')[0];
+        if (inspEl) {
+          this.demande.inspection = {
+            id:            getText('id', inspEl),
+            date:          getText('inspectedat', inspEl),
+            piecedefectueuse: getText('defectivecomponent', inspEl),
+            commentaire:   getText('comment', inspEl),
           };
-
-          this.demande.numero = getText('numero') || this.demande.numero;
-          this.demande.type = getText('type') || this.demande.type;
-          this.demande.commentaire = getText('commentaire') || this.demande.commentaire;
-          this.demande.client_name = getText('client_name') || this.demande.client_name;
-          // dates
-          const di = getText('dateInspection');
-          if (di) this.demande.dateInspection = di;
-          const dint = getText('dateIntervention');
-          if (dint) this.demande.dateIntervention = dint;
-          // numeric
-          const pp = getText('prixPiece');
-          if (pp) this.demande.prixPiece = Number(pp);
-          const ph = getText('prixHoraire');
-          if (ph) this.demande.prixHoraire = Number(ph);
-          const pieces = getText('piecesAChanger');
-          if (pieces) this.demande.piecesAChanger = pieces;
-
-          // set displayed numero
-          this.numDemande = this.demande.numero || this.numDemande;
-        } catch (e) {
-          console.error('XML parse error', e);
         }
-      },
-      error: (err) => {
-        console.error('Failed loading demande XML', err);
+
+        // devis (on prend le premier item pour l'écran simple)
+        const devisEl = root.getElementsByTagName('devis')[0];
+        if (devisEl) {
+          const item = devisEl.getElementsByTagName('item')[0];
+          if (item) {
+            this.demande.devis = [{
+              id:          getText('id', item),
+              prixdepiece: Number(getText('pricecomponent', item) || 0),
+              prixhoraire: Number(getText('pricehour', item) || 0),
+              tempsestime: Number(getText('estimatedtime', item) || 0),
+            }];
+          }
+        }
+
+        // interventions (pareil, on prend la première pour l'écran simple)
+        const intersEl = root.getElementsByTagName('interventions')[0];
+        if (intersEl) {
+          const item = intersEl.getElementsByTagName('item')[0];
+          if (item) {
+            this.demande.interventions = [{
+              id:          getText('id', item),
+              date:        getText('interventiondate', item),
+              lieu:        getText('localisation', item),
+              tempsreel:   Number(getText('realtime', item) || 0),
+              commentaire: getText('comment', item),
+            }];
+          }
+        }
+
+        // pour l’affichage
+        this.numDemande = this.demande.code || this.demande.id || this.numDemande;
+
+      } catch (e) {
+        console.error('XML parse error', e);
       }
-    });
-  }
+    },
+    error: (err) => {
+      console.error('Failed loading demande XML', err);
+    }
+  });
+}
 
-  private buildDemandeXml(d: any): string {
-    // Build a simple XML representation matching backend expectations
-    // Note: keep it simple and escape minimal chars
-    const esc = (v: any) => {
-      if (v == null) return '';
-      return String(v)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-    };
+ private buildDemandeXml(d: any): string {
+  const esc = (v: any) => v == null ? '' : String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<demande>\n  <numero>${esc(d.numero)}</numero>\n  <type>${esc(d.type)}</type>\n  <client_name>${esc(d.client_name)}</client_name>\n  <commentaire>${esc(d.commentaire)}</commentaire>\n  <piecesAChanger>${esc(d.piecesAChanger)}</piecesAChanger>\n  <prixPiece>${esc(d.prixPiece)}</prixPiece>\n  <prixHoraire>${esc(d.prixHoraire)}</prixHoraire>\n  <dateInspection>${esc(d.dateInspection)}</dateInspection>\n  <dateIntervention>${esc(d.dateIntervention)}</dateIntervention>\n</demande>`;
-  }
+  return `<?xml version="1.0" encoding="UTF-8"?>
+          <demande>
+            <id>${esc(d.id)}</id>
+            <code>${esc(d.code)}</code>
+            <state>${esc(d.statut ?? 0)}</state>
+            <type>${esc(d.type)}</type>
+            <comment>${esc(d.commentaire)}</comment>
+          </demande>`;
+}
+
 
   setTab(tab: TabKey) {
     this.activeTab = tab;
@@ -171,7 +210,8 @@ export class DemandesEditComponent implements OnInit {
 
   deleteDemande() {
     this.isDeleting.set(true);
-    this.http.delete(`${environment.apiUrl}/demandes/${this.demandeId}`).subscribe({
+    this.http.delete(`${environment.apiUrl}/demandes/${this.demandeId}`, {responseType: 'text'}).subscribe({
+      
       next: () => {
         this.isDeleting.set(false);
         this.router.navigate(['/demandes']);
