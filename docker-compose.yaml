@@ -113,6 +113,14 @@ services:
       DB_PASSWORD: wagonpass
       DB_NAME: db_wagonlits
       DB_PORT: 5432
+
+      WEBHOOK_SUBSCRIBE_URL: http://webhook-service:3000/subscribe
+      CALLBACK_URL: http://back-wagonlits:3001/webhook
+      WEBHOOK_WHO: erp-wagonlits
+      WEBHOOK__URL: http://webhook-service:3000
+      WEBHOOK_FROM: erp-wagonlits
+      DEFAULT_CLIENT_NAME: erp-wagonlits
+      
     ports:
       - "3001:3001"
 

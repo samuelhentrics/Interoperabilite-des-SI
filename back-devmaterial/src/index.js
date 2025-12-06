@@ -548,7 +548,7 @@ async function publishToWebhookDelete(url, data) {
 
 async function subscribeToWebhook() {
     const subscribeUrl = process.env.WEBHOOK_SUBSCRIBE_URL;
-    const callbackUrl = process.env.CALLBACK_URL || `http://localhost:${port}/webhook`;
+    const callbackUrl = process.env.CALLBACK_URL || `http://localhost:${PORT}/webhook`;
 
     if (!subscribeUrl) {
         console.warn('⚠️ WEBHOOK_SUBSCRIBE_URL is not defined — skipping webhook subscription');

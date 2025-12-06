@@ -28,7 +28,7 @@ export class DemandesAddComponent {
         fault_type: this.type_panne
       },
       {
-        responseType: 'text' as 'json', // important
+        responseType: 'text'
       }
     ).toPromise();
       console.log('Created demande', resp);
