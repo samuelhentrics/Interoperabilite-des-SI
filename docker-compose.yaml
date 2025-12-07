@@ -106,6 +106,7 @@ services:
     container_name: back-wagonlits
     depends_on:
       - db-wagonlits
+      - webhook-service
     environment:
       PORT: 3001
       DB_HOST: db-wagonlits
