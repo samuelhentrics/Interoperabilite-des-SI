@@ -1001,6 +1001,7 @@ app.delete('/api/demandes/:id', async (req, res) => {
     if (rowCount === 0) {
       return res.status(404).type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><error>Demande not found</error>`);
     }
+    sendWebhookDeleteDemande(id);
     return res.status(200).type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><deleted><id>${xmlEscape(id)}</id></deleted>`);
   } catch (err) {
     console.error('DELETE /api/demandes/:id error:', err);
@@ -1028,7 +1029,7 @@ app.post('/webhook', async (req, res) => {
     console.log(`🔁 Webhook provenant de nous-mêmes (${from}), on l’ignore.`);
     return res.status(200).json({ message: 'Ignored self-originated event' });
   }
-  console.log(`🔁 Webhook provenant de nous-mêmes (${from}), on passe`);
+  //console.log(`🔁 Webhook provenant de nous-mêmes (${from}), on passe`);
 
   try {
     switch (event) {
@@ -1125,6 +1126,32 @@ app.post('/webhook', async (req, res) => {
     return res.status(500).json({ error: 'Internal error in wagonlits webhook' });
   }
 });
+
+async function sendWebhookDeleteDemande(id) {
+  const url = `${WEBHOOK_BASE}/api/demandes/${id}`; 
+  try {
+    const resp = await fetch(url, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'delete-demande',
+        from: WEBHOOK_FROM,          // 'erp-wagonlits'
+        event: 'delete-demande',
+        body: { id },
+      }),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '<no body>');
+      console.error(`❌ Webhook delete non-ok (${resp.status}) :`, txt);
+    } else {
+      console.log('✅ Webhook delete-demande envoyé vers', url);
+    }
+  } catch (e) {
+    console.error('⚠️ Erreur envoi webhook delete-demande :', e && e.message ? e.message : e);
+  }
+}
+
 
 
 // ========= JSON → XML adapter ========= 

@@ -379,13 +379,32 @@ app.delete('/api/demandes/:id', async (req, res) => {
     const id = req.params.id; // accept UUID
     try {
         const result = await pool.query('DELETE FROM demandes WHERE id = $1 RETURNING *', [id]);
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found' });
-        return res.json({ message: 'Demande deleted', deleted: result.rows[0] });
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Demande not found' });
+        }
+
+        const deleted = result.rows[0];
+
+        // Notifier le hub pour propager le delete
+        const webhookBase = process.env.WEBHOOK_POST_URL; // ex: http://webhook-service:3000
+        if (webhookBase) {
+            const url = `${webhookBase}/api/demandes/${id}`;
+            publishToWebhookDelete(url, { id: deleted.id }, 'delete-demande')
+                .catch(err => {
+                    // On log l’erreur mais on ne remonte pas 500 au front
+                    console.error('Erreur lors de l\'envoi du webhook delete-demande :', err);
+                });
+        } else {
+            console.warn('⚠️ WEBHOOK_POST_URL non défini, delete non propagé au hub');
+        }
+
+        return res.json({ message: 'Demande deleted', deleted });
     } catch (err) {
         console.error('Erreur lors de la suppression de la demande :', err);
         return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
 
 async function createDemande(data, clientname = null) {
     try {
@@ -495,7 +514,16 @@ app.post("/webhook", (req, res) => {
             console.log("Demande mise à jour :", body);
             break;
         case "delete-demande":
-            console.log("Demande supprimée :", body);
+            console.log("Demande supprimée (event reçu) :", body);
+            if (body && body.id) {
+                pool.query('DELETE FROM demandes WHERE id = $1', [body.id])
+                    .then(() => console.log(`Demande ${body.id} supprimée localement (DevMaterial)`))
+                    .catch(err => {
+                        console.error('❌ Erreur lors de la suppression via webhook :', err.message || err);
+                    });
+            } else {
+                console.warn('⚠️ delete-demande sans body.id, suppression ignorée');
+            }
             break;
         default:
             console.log("Événement inconnu :", event);
@@ -504,24 +532,73 @@ app.post("/webhook", (req, res) => {
     res.status(200).send({ message: "Event received" });
 });
 
-async function publishToWebhookPost(url, data, event) {
+async function publishToWebhookPost(url, data, event = 'add-demande') {
     try {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                message: event, // facultatif côté hub, mais utile pour la route PUT/DELETE qui check "message"
                 from: process.env.DEFAULT_CLIENT_NAME || 'erp-devmaterial',
                 event: event,
                 body: data
             }),
         });
+
         if (!response.ok) {
-            console.log("Response not ok:", response);
+            console.log("Response not ok:", response.status);
             const text = await response.text().catch(() => '<no body>');
             throw new Error(`HTTP ${response.status} - ${text}`);
+        } else {
+            console.log(`Webhook POST successful to ${url} (event=${event})`);
         }
-        else {
-            console.log("Webhook POST successful to", url);
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function publishToWebhookPut(url, data, event = 'update-demande') {
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: event,
+                from: process.env.DEFAULT_CLIENT_NAME || 'erp-devmaterial',
+                event: event,
+                body: data
+            }),
+        });
+
+        if (!response.ok) {
+            const text = await response.text().catch(() => '<no body>');
+            throw new Error(`HTTP ${response.status} - ${text}`);
+        } else {
+            console.log(`Webhook PUT successful to ${url} (event=${event})`);
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function publishToWebhookDelete(url, data, event = 'delete-demande') {
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: event,
+                from: process.env.DEFAULT_CLIENT_NAME || 'erp-devmaterial',
+                event: event,
+                body: data
+            }),
+        });
+
+        if (!response.ok) {
+            const text = await response.text().catch(() => '<no body>');
+            throw new Error(`HTTP ${response.status} - ${text}`);
+        } else {
+            console.log(`Webhook DELETE successful to ${url} (event=${event})`);
         }
     } catch (err) {
         throw err;
@@ -531,46 +608,9 @@ async function publishToWebhookPost(url, data, event) {
 
 
 
-
-async function publishToWebhookPut(url, data) {
-    try {
-        const response = await fetch(url, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-        if (!response.ok) {
-            const text = await response.text().catch(() => '<no body>');
-            throw new Error(`HTTP ${response.status} - ${text}`);
-        }
-    }
-    catch (err) {
-        throw err;
-    }
-}
-
-async function publishToWebhookDelete(url, data) {
-    try {
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-        if (!response.ok) {
-            const text = await response.text().catch(() => '<no body>');
-            throw new Error(`HTTP ${response.status} - ${text}`);
-        }
-    }
-    catch (err) {
-        throw err;
-    }
-}
-
-
-
 async function subscribeToWebhook() {
     const subscribeUrl = process.env.WEBHOOK_SUBSCRIBE_URL;
-    const callbackUrl = process.env.CALLBACK_URL || `http://localhost:${PORT}/webhook`;
+    const callbackUrl = process.env.CALLBACK_URL || `http://localhost:${port}/webhook`;
 
     if (!subscribeUrl) {
         console.warn('⚠️ WEBHOOK_SUBSCRIBE_URL is not defined — skipping webhook subscription');
