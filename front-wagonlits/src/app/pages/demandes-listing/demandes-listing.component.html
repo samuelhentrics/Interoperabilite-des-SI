@@ -13,20 +13,23 @@
         <tr>
           <th scope="col">Numéro</th>
           <th scope="col">Type</th>
+          <th scope="col">Commentaire</th>
           <th scope="col">Date</th>
+          <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let d of demandes">
           <td>{{ d.fault_id || '-' }}</td>
           <td>{{ d.fault_type }}</td>
+          <td>{{ truncate(d.comment) }}</td>
           <td>{{ d.request_date | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>
             <a class="btn btn-sm btn-outline-primary" [routerLink]="['/demandes', d.id]">Modifier</a>
           </td>
         </tr>
         <tr *ngIf="demandes.length === 0">
-          <td colspan="4" class="text-center text-muted">Aucune demande trouvée</td>
+          <td colspan="5" class="text-center text-muted">Aucune demande trouvée</td>
         </tr>
       </tbody>
     </table>

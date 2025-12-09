@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS demandes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(255),
   state INTEGER,
-  createdAt DATE,
+  createdAt TIMESTAMP WITHOUT TIME ZONE,
   type VARCHAR(255),
   comment TEXT
 );
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS devis (
 -- =======================
 CREATE TABLE IF NOT EXISTS intervention (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  interventionDate DATE,
+  interventionDate TIMESTAMP WITHOUT TIME ZONE,
   localisation VARCHAR(255),
   realTime INTEGER,   -- durée réelle (ex: '12 hours 30 minutes')
   comment TEXT,
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS intervention (
 -- =======================
 CREATE TABLE IF NOT EXISTS inspection (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  inspectedAt DATE,
+  inspectedAt TIMESTAMP WITHOUT TIME ZONE,
   defectiveComponent VARCHAR(255),
   comment TEXT,
   demande_id UUID UNIQUE,  -- garantit au plus une inspection par demande

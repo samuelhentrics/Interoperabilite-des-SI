@@ -50,7 +50,7 @@ async function buildWebhookBodyForDemande(demandeId) {
     `SELECT id,
             code,
             state,
-            to_char(createdAt,'YYYY-MM-DD') AS dateCreation,
+            to_char(createdAt,'YYYY-MM-DD HH24:MI:SS') AS dateCreation,
             type,
             comment
      FROM demandes
@@ -231,7 +231,7 @@ app.get('/api/demandes', async (req, res) => {
     const total = countRows[0]?.total ?? 0;
 
     const { rows: demandes } = await pool.query(
-      `SELECT d.id, d.code, d.state, to_char(d.createdAt,'YYYY-MM-DD') AS createdat, d.type, d.comment
+      `SELECT d.id, d.code, d.state, to_char(d.createdAt,'YYYY-MM-DD HH24:MI') AS createdat, d.type, d.comment
        FROM demandes d
        ORDER BY d.createdAt ${order}, d.id
        LIMIT $1 OFFSET $2`,
@@ -366,7 +366,7 @@ app.get('/api/demandes/:id', async (req, res) => {
 
     // Demande
     const { rows: dRows } = await pool.query(
-      `SELECT id, code, state, to_char(createdAt,'YYYY-MM-DD') AS createdat, type, comment
+      `SELECT id, code, state, to_char(createdAt,'YYYY-MM-DD HH24:MI') AS createdat, type, comment
        FROM demandes WHERE id = $1`, [id]
     );
     if (dRows.length === 0) {
@@ -534,16 +534,16 @@ app.post('/api/demandes', express.text({ type: 'application/xml' }), async (req,
     if (idVal) {
       const { rows } = await client.query(
         `INSERT INTO demandes (id, code, state, createdat, type, comment)
-         VALUES ($1, $2, 0, CURRENT_DATE, $3, $4)
-         RETURNING id, code, state, to_char(createdat,'YYYY-MM-DD') AS createdat, type, comment`,
+         VALUES ($1, $2, 0, CURRENT_TIMESTAMP, $3, $4)
+         RETURNING id, code, state, to_char(createdat,'YYYY-MM-DD HH24:MI:SS') AS createdat, type, comment`,
         [idVal, nn(codeVal), nn(typeVal), nn(commentVal)]
       );
       d = rows[0];
     } else {
       const { rows } = await client.query(
         `INSERT INTO demandes (code, state, createdat, type, comment)
-         VALUES ($1, 0, CURRENT_DATE, $2, $3)
-         RETURNING id, code, state, to_char(createdat,'YYYY-MM-DD') AS createdat, type, comment`,
+         VALUES ($1, 0, CURRENT_TIMESTAMP, $2, $3)
+         RETURNING id, code, state, to_char(createdat,'YYYY-MM-DD HH24:MI:SS') AS createdat, type, comment`,
         [nn(codeVal), nn(typeVal), nn(commentVal)]
       );
       d = rows[0];
@@ -896,12 +896,12 @@ app.put('/api/demandes/:id', express.text({ type: 'application/xml' }), async (r
 
     // ---- Réponse: on renvoie le XML de la demande (comme GET by id) ----
     const { rows: dRows } = await pool.query(
-      `SELECT id, code, state, to_char(createdAt,'YYYY-MM-DD') AS createdat, type, comment
+      `SELECT id, code, state, to_char(createdAt,'YYYY-MM-DD HH24:MI') AS createdat, type, comment
        FROM demandes WHERE id = $1`, [id]
     );
     const d = dRows[0];
     const { rows: insRows } = await pool.query(
-      `SELECT id, to_char(inspectedAt,'YYYY-MM-DD') AS inspectedat, defectiveComponent, comment
+      `SELECT id, to_char(inspectedAt,'YYYY-MM-DD HH24:MI') AS inspectedat, defectiveComponent, comment
        FROM inspection WHERE demande_id = $1`, [id]
     );
     const { rows: devisRows } = await pool.query(

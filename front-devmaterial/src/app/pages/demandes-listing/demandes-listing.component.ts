@@ -23,4 +23,9 @@ export class DemandesListingComponent implements OnInit {
       error: (err) => console.error('Erreur lors du chargement des demandes :', err)
     });
   }
+
+  truncate(text: string | null | undefined, maxLength: number = 30): string {
+    if (!text) return '-';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  }
 }

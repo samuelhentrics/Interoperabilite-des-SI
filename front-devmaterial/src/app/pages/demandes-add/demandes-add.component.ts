@@ -20,6 +20,22 @@ export class DemandesAddComponent {
   client_name = 'erp-wagonlits';
   submitting = false;
 
+  // Liste des types de pannes possibles
+  typesPannes = [
+    'Electrique',
+    'Mécanique',
+    'Hydraulique',
+    'Pneumatique',
+    'Electronique',
+    'Informatique',
+    'Carrosserie',
+    'Moteur',
+    'Transmission',
+    'Freinage',
+    'Climatisation',
+    'Autre'
+  ];
+
   constructor(private http: HttpClient, private router: Router) {}
 
   async submit() {

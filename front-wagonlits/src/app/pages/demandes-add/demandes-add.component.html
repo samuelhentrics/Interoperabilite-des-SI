@@ -4,7 +4,15 @@
   <form (ngSubmit)="submit()" #form="ngForm">
     <div class="mb-3">
   <label for="type" class="form-label">Type de panne *</label>
-  <input id="type" name="fault_type" class="form-control" [(ngModel)]="type_panne" required />
+  <select id="type" name="fault_type" class="form-select" [(ngModel)]="type_panne" required>
+    <option value="" disabled selected>-- Sélectionnez un type de panne --</option>
+    <option *ngFor="let type of typesPannes" [value]="type">{{ type }}</option>
+  </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="commentaire" class="form-label">Commentaire</label>
+      <textarea id="commentaire" name="commentaire" class="form-control" [(ngModel)]="comment_panne" rows="3"></textarea>
     </div>
 
     <button class="btn btn-primary" type="submit" [disabled]="submitting">Créer</button>

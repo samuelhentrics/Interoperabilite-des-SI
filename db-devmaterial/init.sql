@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS demandes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(255),
   statut VARCHAR(255),
-  dateCreation DATE,
+  dateCreation TIMESTAMP WITHOUT TIME ZONE,
   type VARCHAR(255),
   commentaire TEXT,
   client_id UUID NOT NULL,
@@ -52,7 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_devis_demande_id ON devis(demande_id);
 -- =======================
 CREATE TABLE IF NOT EXISTS intervention (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  date DATE,
+  date TIMESTAMP WITHOUT TIME ZONE,
   lieu VARCHAR(255),
   tempsReel INTEGER,   -- durée réelle (ex: '12 hours 30 minutes')
   commentaire TEXT,
@@ -71,7 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_intervention_demande_id ON intervention(demande_i
 -- =======================
 CREATE TABLE IF NOT EXISTS inspection (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  date DATE,
+  date TIMESTAMP WITHOUT TIME ZONE,
   pieceDefectueuse VARCHAR(255),
   commentaire TEXT,
   demande_id UUID UNIQUE,  -- garantit au plus une inspection par demande

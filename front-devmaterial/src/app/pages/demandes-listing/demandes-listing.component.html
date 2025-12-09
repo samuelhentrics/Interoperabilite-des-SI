@@ -9,26 +9,28 @@
   <div class="table-responsive">
     <table class="table table-striped table-bordered">
       <thead class="table-light">
-        <tr>
-          <th scope="col">Client</th>
+        <tr> 
           <th scope="col">Code</th>
           <th scope="col">Type</th>
+          <th scope="col">Commentaire</th>
           <th scope="col">Date</th>
+          <th scope="col">Client</th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let d of demandes">
-          <td>{{ d.client_name }}</td>
           <td>{{ d.code }}</td>
           <td>{{ d.type }}</td>
+          <td>{{ truncate(d.commentaire) }}</td>
           <td>{{ d.datecreation | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ d.client_name }}</td>
           <td>
             <a class="btn btn-sm btn-outline-primary" [routerLink]="['/demandes', d.id]">Modifier</a>
           </td>
         </tr>
         <tr *ngIf="demandes.length === 0">
-          <td colspan="5" class="text-center text-muted">Aucune demande trouvée</td>
+          <td colspan="6" class="text-center text-muted">Aucune demande trouvée</td>
         </tr>
       </tbody>
     </table>

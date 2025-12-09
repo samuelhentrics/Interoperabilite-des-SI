@@ -107,7 +107,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/api/demandes", async (req, res) => {
     try {
         // Return demandes with client name
-        const q = `SELECT d.*, c.nom AS client_name
+        const q = `SELECT d.id, d.code, d.statut, 
+                   to_char(d.dateCreation, 'YYYY-MM-DD HH24:MI:SS') AS datecreation,
+                   d.type, d.commentaire, d.client_id, c.nom AS client_name
                    FROM demandes d
                    LEFT JOIN client c ON d.client_id = c.id
                    ORDER BY d.dateCreation DESC NULLS LAST`;
@@ -163,7 +165,9 @@ app.post('/api/demandes', async (req, res) => {
 app.get('/api/demandes/:id', async (req, res) => {
     const id = req.params.id; // accept UUID string
     try {
-        const q = `SELECT d.*, c.nom AS client_name
+        const q = `SELECT d.id, d.code, d.statut,
+                   to_char(d.dateCreation, 'YYYY-MM-DD HH24:MI:SS') AS datecreation,
+                   d.type, d.commentaire, d.client_id, c.nom AS client_name
                    FROM demandes d
                    LEFT JOIN client c ON d.client_id = c.id
                    WHERE d.id = $1`;
@@ -173,8 +177,8 @@ app.get('/api/demandes/:id', async (req, res) => {
 
         // fetch related items
         const devis = (await pool.query('SELECT * FROM devis WHERE demande_id = $1 ORDER BY id', [id])).rows;
-        const interventions = (await pool.query('SELECT * FROM intervention WHERE demande_id = $1 ORDER BY id', [id])).rows;
-        const inspection = (await pool.query('SELECT * FROM inspection WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
+        const interventions = (await pool.query(`SELECT id, to_char(date, 'YYYY-MM-DD HH24:MI:SS') AS date, lieu, tempsreel, commentaire, demande_id FROM intervention WHERE demande_id = $1 ORDER BY id`, [id])).rows;
+        const inspection = (await pool.query(`SELECT id, to_char(date, 'YYYY-MM-DD HH24:MI:SS') AS date, piecedefectueuse, commentaire, demande_id FROM inspection WHERE demande_id = $1 LIMIT 1`, [id])).rows[0] || null;
         const rapport = (await pool.query('SELECT * FROM rapport WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
 
         let structuredResponse = demande;
@@ -342,9 +346,10 @@ app.put('/api/demandes/:id', async (req, res) => {
         if (result.rows.length === 0) return res.status(404).json({ error: 'Demande not found after update' });
         const demande = result.rows[0];
 
+        // fetch related items
         const devis = (await pool.query('SELECT * FROM devis WHERE demande_id = $1 ORDER BY id', [id])).rows;
-        const interventions = (await pool.query('SELECT * FROM intervention WHERE demande_id = $1 ORDER BY id', [id])).rows;
-        const inspection = (await pool.query('SELECT * FROM inspection WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
+        const interventions = (await pool.query(`SELECT id, to_char(date, 'YYYY-MM-DD HH24:MI:SS') AS date, lieu, tempsreel, commentaire, demande_id FROM intervention WHERE demande_id = $1 ORDER BY id`, [id])).rows;
+        const inspection = (await pool.query(`SELECT id, to_char(date, 'YYYY-MM-DD HH24:MI:SS') AS date, piecedefectueuse, commentaire, demande_id FROM inspection WHERE demande_id = $1 LIMIT 1`, [id])).rows[0] || null;
         const rapport = (await pool.query('SELECT * FROM rapport WHERE demande_id = $1 LIMIT 1', [id])).rows[0] || null;
 
         let structuredResponse = demande;
@@ -401,11 +406,11 @@ async function createDemande(data, clientname = null) {
         try {
             await conn.query('BEGIN');
             const insertDemandeQuery = id
-                ? `INSERT INTO demandes (id, code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`
-                : `INSERT INTO demandes (code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`;
+                ? `INSERT INTO demandes (id, code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,$3,NOW(),$4,$5,$6) RETURNING *`
+                : `INSERT INTO demandes (code, statut, dateCreation, type, commentaire, client_id) VALUES ($1,$2,NOW(),$3,$4,$5) RETURNING *`;
             const insertDemandeParams = id
-                ? [id, code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal]
-                : [code || null, 0 || null, new Date().toISOString().slice(0,10), demandeType, commentaire, clientIdFinal];
+                ? [id, code || null, 0 || null, demandeType, commentaire, clientIdFinal]
+                : [code || null, 0 || null, demandeType, commentaire, clientIdFinal];
 
             const rDem = await conn.query(insertDemandeQuery, insertDemandeParams);
             const demandeRow = rDem.rows[0];

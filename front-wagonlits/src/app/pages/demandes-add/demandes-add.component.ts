@@ -15,7 +15,24 @@ import { environment } from '../../../environments/environment';
 export class DemandesAddComponent {
   panne_id = '';
   type_panne = '';
+  comment_panne = '';
   submitting = false;
+
+  // Liste des types de pannes possibles
+  typesPannes = [
+    'Electrique',
+    'Mécanique',
+    'Hydraulique',
+    'Pneumatique',
+    'Electronique',
+    'Informatique',
+    'Carrosserie',
+    'Moteur',
+    'Transmission',
+    'Freinage',
+    'Climatisation',
+    'Autre'
+  ];
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -26,6 +43,7 @@ export class DemandesAddComponent {
       const resp: any = await this.http.post(`${environment.apiUrl}/demandes`, {
         fault_id: this.panne_id || undefined,
         fault_type: this.type_panne,
+        comment: this.comment_panne || undefined
       },
       {
         responseType: 'text'

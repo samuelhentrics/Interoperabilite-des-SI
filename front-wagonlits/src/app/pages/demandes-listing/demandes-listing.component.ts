@@ -49,4 +49,9 @@ export class DemandesListingComponent implements OnInit {
       complete: () => this.isTriggering = false
     });
   }
+
+  truncate(text: string | null | undefined, maxLength: number = 30): string {
+    if (!text) return '-';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  }
 }
