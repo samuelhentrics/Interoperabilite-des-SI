@@ -1,10 +1,10 @@
 # INTEROPERABILITE DES SYSTEMES
 
 ## Description du Projet
-Ce dépôt présente le prototype fonctionnel développé dans le cadre du module "Interopérabilité des SI" du Master 2ème année SIGLIS (Année 2025/2026).
+Ce dépôt présente le prototype fonctionnel développé dans le cadre du module "Interopérabilité des SI".
 Ce cas d'étude concerne le secteur du transport ferroviaire et l'interaction entre deux constructeurs de trains, WagonLits et ConstructWagons, et leur sous-traitant critique, DevMateriels.
 Le prototype simule la phase de maintenance curative et vise à résoudre les problèmes d'échanges d'informations actuels (utilisation de fichiers Excel par courriel, saisie manuelle dans l'ERP) qui entraînent des incohérences de stock et des pénalités financières.
-L'objectif est de mettre en place une solution interopérable et standardisée pour DevMateriels, permettant de récupérer et de gérer les commandes de ses clients de manière uniforme et automatisée.
+Ce projet permet de mettre en place une solution interopérable et standardisée pour DevMateriels, permettant de récupérer et de gérer les commandes de ses clients de manière uniforme et automatisée.
 
 ==================================================
 ## ARCHITECURE TECHNIQUE & DEPLOIEMENT
