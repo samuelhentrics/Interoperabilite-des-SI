@@ -25,7 +25,7 @@ export class DemandesAddComponent {
     try {
       const resp: any = await this.http.post(`${environment.apiUrl}/demandes`, {
         fault_id: this.panne_id || undefined,
-        fault_type: this.type_panne
+        fault_type: this.type_panne,
       },
       {
         responseType: 'text'
