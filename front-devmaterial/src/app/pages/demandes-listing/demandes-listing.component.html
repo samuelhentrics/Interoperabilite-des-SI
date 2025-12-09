@@ -10,7 +10,6 @@
     <table class="table table-striped table-bordered">
       <thead class="table-light">
         <tr>
-          <th scope="col">ID</th>
           <th scope="col">Client</th>
           <th scope="col">Code</th>
           <th scope="col">Type</th>
@@ -20,11 +19,10 @@
       </thead>
       <tbody>
         <tr *ngFor="let d of demandes">
-          <th scope="row">{{ d.id }}</th>
           <td>{{ d.client_name }}</td>
           <td>{{ d.code }}</td>
           <td>{{ d.type }}</td>
-          <td>{{ d.datecreation | date:'yyyy-MM-dd' }}</td>
+          <td>{{ d.datecreation | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>
             <a class="btn btn-sm btn-outline-primary" [routerLink]="['/demandes', d.id]">Modifier</a>
           </td>
