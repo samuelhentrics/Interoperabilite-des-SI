@@ -1038,6 +1038,11 @@ app.post('/webhook', async (req, res) => {
         const xml = jsonToDemandeXml(body);
         console.log('🔧 XML généré :', xml);
 
+        if(body.client_name !== 'erp-wagonlits') {
+          console.log('⚪ Non un événement wagonlits, on l’ignore.');
+          return res.status(200).json({ message: 'Ignored non-constructwagons event' });
+        }
+
         const resp = await fetch(`http://localhost:${PORT}/api/demandes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/xml' },

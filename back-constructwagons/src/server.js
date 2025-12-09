@@ -1036,8 +1036,8 @@ app.post('/webhook', async (req, res) => {
         console.log('🟢 Event add-demande reçu, génération XML & POST /api/demandes');
 
         // Vérification si webhook pour constructwagons 
-        if(body.clientName !== 'constructwagons') {
-          console.log(body)
+        if(body.client_name !== 'erp-constructwagons') {
+          console.log('⚪ Non un événement constructwagons, on l’ignore.');
           return res.status(200).json({ message: 'Ignored non-constructwagons event' });
         }
 
