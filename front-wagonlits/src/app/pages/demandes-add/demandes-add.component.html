@@ -2,6 +2,7 @@
   <h3>Ajouter une demande</h3>
 
   <form (ngSubmit)="submit()" #form="ngForm">
+
     <div class="mb-3">
   <label for="type" class="form-label">Type de panne *</label>
   <select id="type" name="fault_type" class="form-select" [(ngModel)]="type_panne" required>

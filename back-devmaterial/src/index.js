@@ -148,7 +148,7 @@ app.post('/api/demandes', async (req, res) => {
         let result = await createDemande(req.body, req.body.client_name);
 
         try{
-            await publishToWebhookPost(process.env.WEBHOOK_POST_URL + "/api/demandes", req.body);
+            await publishToWebhookPost(process.env.WEBHOOK_POST_URL + "/api/demandes", result);
         }
         catch (err) {
             console.error('Erreur lors de l\'envoi du webhook :', err);
@@ -156,6 +156,12 @@ app.post('/api/demandes', async (req, res) => {
 
         return res.json(result);
     } catch (err) {
+        // Gérer les erreurs de contrainte unique (code déjà existant)
+        if (err.code === '23505') { // Erreur PostgreSQL pour violation de clé unique
+            console.warn('Contrainte unique violée (code déjà existant):', err.message);
+            return res.status(409).json({ error: 'Une demande avec ce code existe déjà. Veuillez réessayer.' });
+        }
+        
         console.error('Erreur lors de la création de la demande :', err);
         return res.status(500).json({ error: 'Erreur serveur' });
     }
@@ -472,7 +478,14 @@ app.post("/webhook", (req, res) => {
     switch (event) {
         case "add-demande":
             console.log("Nouvelle demande reçue :", body);
-            createDemande(body);
+            createDemande(body).catch(err => {
+                // Gérer les erreurs sans faire tomber le serveur
+                if (err.code === '23505') {
+                    console.warn('⚠️ Contrainte unique violée (code déjà existant) - webhook ignoré');
+                } else {
+                    console.error('❌ Erreur lors de la création de demande via webhook:', err.message);
+                }
+            });
             break;
         case "update-demande":
             console.log("Demande mise à jour :", body);

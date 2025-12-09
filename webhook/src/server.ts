@@ -176,6 +176,9 @@ async function sendWebhook(from: string, event: string, body: any) {
 
     const results: { who: string; url: string; ok: boolean; status?: number; error?: string }[] = [];
 
+    console.log("Envoie prévu vers les cibles :", targets);
+    console.log("De la part de :", from);
+
     await Promise.all(targets.map(async (t) => {
         try {
             const r = await fetch(t.url, {
