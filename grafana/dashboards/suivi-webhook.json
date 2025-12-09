@@ -106,7 +106,11 @@
       "type": "stat"
     },
     {
-      "datasource": {},
+      "datasource": {
+        "default": true,
+        "type": "grafana-postgresql-datasource",
+        "uid": "PECDE715A81A2F039"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -185,7 +189,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT date_trunc('hour', created_at) AS heure, COUNT(*) AS erreurs\r\nFROM event_results\r\nGROUP BY heure\r\nORDER BY heure;\r\n",
+          "rawSql": "SELECT date_trunc('hour', created_at) AS heure, COUNT(*) AS erreurs\r\nFROM event_results\r\nWHERE status != 'ok'\r\nGROUP BY heure\r\nORDER BY heure;\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -488,6 +492,6 @@
   "timezone": "browser",
   "title": "Suivi des logs",
   "uid": "ef189b20i5fk0f",
-  "version": 7,
+  "version": 1,
   "weekStart": ""
 }
