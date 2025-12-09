@@ -391,7 +391,11 @@ async function createDemande(data, clientname = null) {
     try {
         console.log(data);
         const id = data.id; // accept UUID
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        // Utiliser le code fourni ou en générer un nouveau
+        let code = data.code;
+        if (!code) {
+            code = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        }
         const demandeType = data.type;
         const commentaire = data.commentaire;
         let client_name = data.client_name || clientname;

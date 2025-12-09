@@ -517,7 +517,13 @@ app.post('/api/demandes', express.text({ type: 'application/xml' }), async (req,
     const idVal = getTag('id');
     const typeVal = getTag('type');
     const commentVal = getTag('comment');
-    const codeVal = getTag('code');
+    let codeVal = getTag('code');
+    
+    // Générer un code si non fourni
+    if (!codeVal) {
+      const random = Math.floor(Math.random() * 1000000);
+      codeVal = random.toString().padStart(6, '0');
+    }
 
     if (idVal && !isUUID(idVal)) {
       return res
