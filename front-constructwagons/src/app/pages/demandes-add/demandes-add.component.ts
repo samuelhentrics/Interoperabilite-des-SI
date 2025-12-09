@@ -15,9 +15,7 @@ import { environment } from '../../../environments/environment';
 export class DemandesAddComponent {
   panne_id = '';
   type_panne = '';
-  comment_panne = 'OK';
-  clients=[{id:"erp-wagonlits", name:'wagonlits'}, {id:"erp-constructwagons", name:'constructwagons'}];
-  client_name = 'erp-wagonlits';
+  comment_panne = '';
   submitting = false;
 
   // Liste des types de pannes possibles
@@ -44,10 +42,13 @@ export class DemandesAddComponent {
     try {
       const resp: any = await this.http.post(`${environment.apiUrl}/demandes`, {
         fault_id: this.panne_id || undefined,
-        type: this.type_panne,
-        commentaire: this.comment_panne || undefined,
-        client_name: this.client_name || undefined
-      }).toPromise();
+        fault_type: this.type_panne,
+        comment: this.comment_panne || undefined
+      },
+      {
+        responseType: 'text'
+      }
+    ).toPromise();
       console.log('Created demande', resp);
       this.router.navigate(['/demandes']);
     } catch (err) {

@@ -1,0 +1,42 @@
+.demande-page {
+  .big-textarea { min-height: 220px; resize: vertical; }
+
+  /* Carte autour des onglets */
+  .tabs-card {
+    background: #fff;
+    border-radius: 1rem;
+    padding: .5rem .75rem;
+    box-shadow: 0 6px 16px rgba(0,0,0,.06);
+  }
+
+  /* Look des pills */
+  .nav-pills .nav-link {
+    color: #0d6efd;                 /* primaire Bootstrap */
+    border-radius: .75rem;
+    font-weight: 500;
+  }
+  .nav-pills .nav-link:hover {
+    background: rgba(13,110,253,.08);
+  }
+  .nav-pills .nav-link.active {
+    background: #0d6efd;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(13,110,253,.25);
+  }
+
+  /* Header alignment: stack client info and center the pills vertically */
+  .tabs-card .client-info {
+    min-width: 160px;
+  }
+  .tabs-card .header-pills {
+    display: flex;
+    align-items: center; /* center pills vertically beside client-info */
+  }
+  @media (max-width: 768px) {
+    .tabs-card .header-pills {
+      margin-top: .5rem;
+      justify-content: center;
+      width: 100%;
+    }
+  }
+}

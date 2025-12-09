@@ -139,6 +139,67 @@ services:
     ports:
       - "4201:4200"
 
+
+  # ==================
+  # === WAGONLITS ====
+  # ==================
+  db-constructwagons:
+    image: postgres:16
+    container_name: db-constructwagons
+    ports:
+      - "5435:5432"
+    depends_on:
+      - webhook-service
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: wagonpass
+      POSTGRES_DB: db_constructwagons
+    volumes:
+      - db_data_constructwagons:/var/lib/postgresql/data
+      - ./db-constructwagons/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  back-constructwagons:
+    build: ./back-constructwagons
+    container_name: back-constructwagons
+    depends_on:
+      - db-constructwagons
+      - webhook-service
+    environment:
+      PORT: 3001
+      DB_HOST: db-constructwagons
+      DB_USER: devuser
+      DB_PASSWORD: wagonpass
+      DB_NAME: db_constructwagons
+      DB_PORT: 5432
+
+      WEBHOOK_SUBSCRIBE_URL: http://webhook-service:3000/subscribe
+      CALLBACK_URL: http://back-constructwagons:3001/webhook
+      WEBHOOK_WHO: erp-constructwagons
+      WEBHOOK__URL: http://webhook-service:3000
+      WEBHOOK_FROM: erp-constructwagons
+      DEFAULT_CLIENT_NAME: erp-constructwagons
+      
+    ports:
+      - "3002:3001"
+
+  front-constructwagons:
+    build:
+      context: ./front-constructwagons
+    container_name: front-constructwagons
+    depends_on:
+      - back-constructwagons
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./front-constructwagons:/app
+      - /app/node_modules
+    ports:
+      - "4202:4200"
+
+
+
+
+
   grafana:
     image: grafana/grafana:11.2.0
     container_name: grafana
@@ -165,4 +226,5 @@ volumes:
   pgadmin-data:
   db_data_devmaterial:
   db_data_wagonlits:
+  db_data_constructwagons:
   grafana-data:
