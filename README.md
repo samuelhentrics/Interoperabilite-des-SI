@@ -9,9 +9,6 @@ Ce projet permet de mettre en place une solution interopérable et standardisée
 ==================================================
 ## ARCHITECURE TECHNIQUE & DEPLOIEMENT
 
-Prérequis
-* Docker
-* Docker Compose
 
 ### DEMARRAGE DU PROTOTYPE
 Pour construire les images Docker et lancer l'ensemble des services (APIs, bases de données, outils de monitoring, interfaces) :
