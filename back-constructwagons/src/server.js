@@ -196,7 +196,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
  *       200:
  *         description: OK
  */
-app.get('/health', (_req, res) => res.status(200).send({ ok: true }));
+app.get('/api/health', (_req, res) => res.status(200).send({ ok: true }));
 
 /**
  * @swagger

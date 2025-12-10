@@ -35,14 +35,23 @@ Une fois le prototype lancé, les différents composants sont accessibles aux ad
 
 * DevMateriels API (Test API) : ```localhost:3000/api/health```
 * WagonLits API (Test API) : ```localhost:3001/api/health```
+* ConstructWagons API (Test API) : ```localhost:3002/api/health```
 * DevMateriels UI (Interface Web) : ```localhost:4200```
 * WagonLits UI (Interface Web) : ```localhost:4201```
+* ConstructWagons UI (Interface web) : ```localhost:4202```
 * Grafana (Monitoring) : ```localhost:3030```
 * PGAdmin (Base de données) : ```localhost:8080```
 
 ## Note PGAdmin :
 * Email : admin@gmail.com
 * Mot de passe : admin
+
+## Note BDD Connection
+* lien; user; password
+* webhook-db; webhook; webhook
+* db-constructwagons; devuser; wagonpass
+* db-devmaterial; devuser; devpass
+* db-wagonlits; devuser; wagonpass
 
 ==================================================
 ## AUTEURS

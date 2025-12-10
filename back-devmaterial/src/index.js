@@ -480,6 +480,9 @@ async function createDemande(data, clientname = null) {
     }
 }
 
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // --- webhook ---
 app.post("/webhook", (req, res) => {
